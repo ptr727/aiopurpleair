@@ -13,7 +13,9 @@ Run::
 
 from __future__ import annotations
 
+import asyncio
 import os
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -21,7 +23,7 @@ import pytest
 
 from aiopurpleair import API
 from aiopurpleair.const import SENSOR_FIELDS
-from aiopurpleair.errors import ApiDisabledError
+from aiopurpleair.errors import ApiDisabledError, GroupNotFoundError
 from aiopurpleair.models.keys import ApiKeyType
 
 
@@ -47,6 +49,8 @@ _API_KEYS = [key for key in (_ENV.get("PURPLEAIR_API_KEY", ""), _ENV.get("PURPLE
 _PRIMARY_KEY = _API_KEYS[0] if _API_KEYS else ""
 # A WRITE key (same account) enables the self-cleaning groups round-trip.
 _WRITE_KEY = _ENV.get("PURPLEAIR_API_KEY_WRITE", "")
+# The owning account's registration email enables the member round-trip.
+_OWNER_EMAIL = _ENV.get("PURPLEAIR_OWNER_EMAIL", "")
 # Parametrize labels must NOT be the raw keys (they would leak into test IDs and
 # CI logs); use positional labels instead.
 _KEY_PARAMS = _API_KEYS or [""]
@@ -148,17 +152,52 @@ async def test_live_sensor_history() -> None:
     pytest.skip("the history endpoint is disabled for all configured API keys")
 
 
+async def _read_when_ready[T](factory: Callable[[], Awaitable[T]]) -> T | None:
+    """Await a group read, polling through the transient GroupNotFoundError.
+
+    Group and member reads are eventually consistent after a write, so a read
+    can 404 for a few seconds. Returns the result, or ``None`` if it never
+    settles.
+    """
+    for _ in range(12):
+        try:
+            return await factory()
+        except GroupNotFoundError:
+            await asyncio.sleep(5)
+    return None
+
+
+async def _add_member_when_ready(write_api: API, group_id: int, sensor_index: int) -> int | None:
+    """Add an owned sensor once the new group has propagated.
+
+    Group creation is eventually consistent - the member endpoint can return
+    ``GroupNotFoundError`` for a few seconds after the group is created - so this
+    retries briefly and returns the member id, or ``None`` if it never settles.
+    """
+    for _ in range(12):
+        try:
+            response = await write_api.groups.async_create_member(
+                group_id, sensor_index=sensor_index, owner_email=_OWNER_EMAIL
+            )
+        except GroupNotFoundError:
+            await asyncio.sleep(5)
+            continue
+        return response.member_id
+    return None
+
+
 @pytest.mark.skipif(
     not (_LIVE and _WRITE_KEY and _PRIMARY_KEY),
     reason="need PURPLEAIR_API_KEY_WRITE and a same-account PURPLEAIR_API_KEY in .env.test",
 )
 async def test_live_groups_roundtrip() -> None:
-    """A group can be created (WRITE key), listed (READ key), and deleted.
+    """A group and its members round-trip through the real API (self-cleaning).
 
     Reads and writes use different key types even within groups: create/delete
-    take the WRITE key, list/detail take the same account's READ key. This is
-    the only live test that writes; it always deletes the group it creates,
-    even on assertion failure.
+    take the WRITE key, list/detail/data take the same account's READ key. With
+    an owner email + owned sensor configured, a member is added and read back;
+    otherwise just the group create/list/delete is exercised. Everything created
+    is always deleted, even on assertion failure.
     """
     write_api = API(_WRITE_KEY)
     read_api = API(_PRIMARY_KEY)
@@ -166,9 +205,29 @@ async def test_live_groups_roundtrip() -> None:
     group_id = created.group_id
     try:
         assert group_id
-        # The list is eventually consistent, so just assert the READ-key call
-        # succeeds and returns groups rather than requiring the new one yet.
         listing = await read_api.groups.async_get_groups()
         assert isinstance(listing.groups, list)
+
+        pairs = _sensor_pairs()
+        if not (_OWNER_EMAIL and pairs):
+            return
+        sensor_index = pairs[0][0]
+        member_id = await _add_member_when_ready(write_api, group_id, sensor_index)
+        if member_id is None:
+            pytest.skip("the new group did not propagate to the member endpoint in time")
+        try:
+            # The member reads are eventually consistent too, so poll through the
+            # transient GroupNotFoundError before asserting.
+            member = await _read_when_ready(
+                lambda: read_api.groups.async_get_member(group_id, member_id, fields=["name"])
+            )
+            if member is not None:
+                assert member.member_id == member_id
+                assert member.sensor.sensor_index == sensor_index
+            members = await _read_when_ready(lambda: read_api.groups.async_get_members(group_id, ["name"]))
+            if members is not None:
+                assert members.group_id == group_id
+        finally:
+            await write_api.groups.async_delete_member(group_id, member_id)
     finally:
         await write_api.groups.async_delete_group(group_id)

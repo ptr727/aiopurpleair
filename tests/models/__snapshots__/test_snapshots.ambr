@@ -65,6 +65,7 @@
     'api_version': 'V1.2.0-1.1.45',
     'data_timestamp_utc': '2022-11-05T16:36:21Z',
     'group_id': 1234,
+    'member_id': 5678,
     'sensor': dict({
       'altitude': None,
       'analog_input': None,

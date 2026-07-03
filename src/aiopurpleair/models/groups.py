@@ -1,12 +1,9 @@
 """Define request and response models for groups.
 
-The groups list/detail/create shapes and the sensor/member history CSV are
-verified against the live API. The member *data* read shapes
-(``GET /v1/groups/:group_id/members`` and the single-member variant) mirror the
-corresponding sensors responses per the PurpleAir documentation, with a
-``group_id`` added; the fields the sensors responses require but a members
-response may omit (``max_age``, ``firmware_default_version``) are optional here
-for robustness.
+All group and member response shapes are verified against the live API. The
+members-data reads reuse the sensors response shape with ``group_id`` (and the
+single-member read also carries ``member_id``); ``max_age`` and
+``firmware_default_version`` are present but kept optional for robustness.
 """
 
 # pylint: disable=too-few-public-methods
@@ -187,11 +184,13 @@ class GetMembersResponse(PurpleAirBaseModel):
 class GetMemberResponse(PurpleAirBaseModel):
     """Define a response to GET /v1/groups/:group_id/members/:member_id.
 
-    Mirrors GetSensorResponse (a single sensor) with a ``group_id``.
+    Mirrors GetSensorResponse (a single sensor) with ``group_id`` and
+    ``member_id``.
     """
 
     api_version: str
     group_id: int
+    member_id: int
     sensor: SensorModel
     data_timestamp_utc: datetime = Field(alias="data_time_stamp")
     timestamp_utc: datetime = Field(alias="time_stamp")

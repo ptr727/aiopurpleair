@@ -229,6 +229,7 @@ async def test_get_member(aresponses: ResponsesMockServer) -> None:
         api = API(TEST_API_KEY, session=session)
         response = await api.groups.async_get_member(1234, 5678, fields=["name"])
         assert response.group_id == 1234
+        assert response.member_id == 5678
         assert response.sensor.sensor_index == 131075
         assert response.sensor.name == "Mariners Bluff"
 

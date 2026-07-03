@@ -3,6 +3,7 @@
   "time_stamp": 1667666223,
   "data_time_stamp": 1667666181,
   "group_id": 1234,
+  "member_id": 5678,
   "sensor": {
     "sensor_index": 131075,
     "name": "Mariners Bluff",
