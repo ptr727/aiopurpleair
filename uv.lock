@@ -666,7 +666,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "aresponses", specifier = ">=3.0,<4.0" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.6" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.15.0" },
     { name = "mypy", specifier = ">=1.13" },
     { name = "pyright", specifier = ">=1.1.390" },
     { name = "pytest", specifier = ">=8.3" },
