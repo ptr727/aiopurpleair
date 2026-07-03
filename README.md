@@ -26,6 +26,7 @@ Release highlights - see [Release History](./HISTORY.md) for details.
 **Version 1.0.0**:
 
 - First release of the independent, standalone library, published to PyPI as `ptr727-aiopurpleair`. It is a maintained continuation (no fork lineage) of the work from the now-closed upstream PR [bachya/aiopurpleair#719][bachya-pr-link]. Requires Python 3.13 or newer; tested on 3.13 and 3.14.
+- **Breaking change** - the API-key check moved from the top-level `api.async_check_api_key()` to the grouped `api.keys.async_check_api_key()`, so keys sit alongside `api.sensors`, `api.organizations`, and `api.groups` for one consistent endpoint-group surface. Update callers to the new path.
 - **Full API coverage** - keys, sensors (list, single, and history as JSON or CSV), organization, and the complete Groups API (group and member management, member data, and member history CSV). Coverage is validated against a reconstructed OpenAPI spec and, opt-in, against the live API.
 - **Organization endpoint** - `GET /v1/organization` (`api.organizations.async_get_organization()`) reports the account's remaining API points and consumption rate, alongside the organization id, name, and API version, so a consumer can surface a low-points warning before queries start failing.
 - **Typed exception hierarchy** - each documented PurpleAir error code maps to a specific exception subclass (`InvalidApiKeyError`, `PaymentRequiredError`, `RateLimitExceededError`, ...), grouped under `RequestError` / `InvalidApiKeyError` / `InvalidRequestError` intermediates so callers catch broadly or narrowly; all derive from `PurpleAirError`.
@@ -57,7 +58,7 @@ Get started with aiopurpleair in two easy steps:
     async def main() -> None:
         """Check an API key and fetch sensors."""
         api = API("<API_KEY>")
-        keys = await api.async_check_api_key()
+        keys = await api.keys.async_check_api_key()
         sensors = await api.sensors.async_get_sensors(["name", "pm2.5"])
         organization = await api.organizations.async_get_organization()
 
@@ -97,7 +98,7 @@ See [Usage](#usage) for detailed usage instructions.
 
 Full async coverage of the PurpleAir API, each method mirroring a documented endpoint:
 
-- **Keys** - validate an API key and read its type (`GET /v1/keys`), via `api.async_check_api_key()`.
+- **Keys** - validate an API key and read its type (`GET /v1/keys`), via `api.keys.async_check_api_key()`.
 - **Sensors** - one sensor, many sensors by field selection, or a distance-sorted nearby search, plus a map-URL helper (`GET /v1/sensors`, `GET /v1/sensors/{sensor_index}`), via `api.sensors`.
 - **Sensor history** - historical time series for a sensor as parsed JSON or raw CSV (`GET /v1/sensors/{sensor_index}/history[/csv]`), via `api.sensors`.
 - **Organization** - the account's remaining API points and consumption rate (`GET /v1/organization`), via `api.organizations`.
@@ -121,7 +122,7 @@ from aiopurpleair import API
 async def main() -> None:
     """Check whether an API key is valid and what properties it has."""
     api = API("<API_KEY>")
-    response = await api.async_check_api_key()
+    response = await api.keys.async_check_api_key()
     # >>> response.api_key_type == ApiKeyType.READ
     # >>> response.api_version == "V1.0.11-0.0.41"
 

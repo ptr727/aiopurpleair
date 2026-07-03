@@ -11,11 +11,11 @@ from pydantic import ValidationError
 
 from aiopurpleair.const import LOGGER
 from aiopurpleair.endpoints.groups import GroupsEndpoints
+from aiopurpleair.endpoints.keys import KeysEndpoints
 from aiopurpleair.endpoints.organizations import OrganizationsEndpoints
 from aiopurpleair.endpoints.sensors import SensorsEndpoints
 from aiopurpleair.errors import RequestError, raise_error
 from aiopurpleair.helpers.model import PurpleAirBaseModelT
-from aiopurpleair.models.keys import GetKeysResponse
 
 API_URL_BASE = "https://api.purpleair.com/v1"
 
@@ -43,16 +43,9 @@ class API:
         self._session = session
 
         self.groups = GroupsEndpoints(self)
+        self.keys = KeysEndpoints(self)
         self.organizations = OrganizationsEndpoints(self)
         self.sensors = SensorsEndpoints(self)
-
-    async def async_check_api_key(self) -> GetKeysResponse:
-        """Check the validity of the API key.
-
-        Returns:
-            An API response payload.
-        """
-        return await self.async_request("get", "/keys", GetKeysResponse)
 
     async def _async_send(
         self,

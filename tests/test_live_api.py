@@ -74,7 +74,7 @@ def _sensor_pairs() -> list[tuple[int, str | None]]:
 @pytest.mark.parametrize("api_key", _KEY_PARAMS, ids=_KEY_IDS)
 async def test_live_check_api_key(api_key: str) -> None:
     """Each configured READ key is valid and reports a usable key type."""
-    response = await API(api_key).async_check_api_key()
+    response = await API(api_key).keys.async_check_api_key()
     assert response.api_key_type in (ApiKeyType.READ, ApiKeyType.WRITE)
 
 
