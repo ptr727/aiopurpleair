@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/aiopurpleair-ptr727/
+      url: https://pypi.org/project/ptr727-aiopurpleair/
     # id-token:write for Trusted Publishing's OIDC exchange, contents:read for repo metadata.
     permissions:
       id-token: write

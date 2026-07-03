@@ -4,7 +4,7 @@ Notes for AI coding agents working in this repo. Keep responses concise; prefer 
 
 ## What this is
 
-An async Python client library for the [PurpleAir][purpleair] air-quality API, published to PyPI as **`aiopurpleair-ptr727`** (the import package stays `aiopurpleair`). It covers the sensors and keys endpoints, adds a `GET /v1/organization` endpoint for tracking remaining API points, and maps the API's documented error codes to a typed exception hierarchy. Library source lives under [`src/aiopurpleair/`](src/aiopurpleair/) (src-layout), the build backend is hatchling, and the environment is [uv][uv]-managed. `requires-python >=3.13`.
+An async Python client library for the [PurpleAir][purpleair] air-quality API, published to PyPI as **`ptr727-aiopurpleair`** (the import package stays `aiopurpleair`). It covers the sensors and keys endpoints, adds a `GET /v1/organization` endpoint for tracking remaining API points, and maps the API's documented error codes to a typed exception hierarchy. Library source lives under [`src/aiopurpleair/`](src/aiopurpleair/) (src-layout), the build backend is hatchling, and the environment is [uv][uv]-managed. `requires-python >=3.13`.
 
 The library began as the `feat/organization-endpoint-and-error-codes` branch of a fork of [bachya/aiopurpleair][upstream] by Aaron Bach. Those additions were proposed upstream, the upstream maintainer became unresponsive, and the contribution was abandoned; it is now independently maintained here. It is **MIT-licensed with dual copyright** - original © 2024 Aaron Bach, current © 2026 Pieter Viljoen - retained in [LICENSE](LICENSE) and [NOTICE](NOTICE). The primary consumer is the [`homeassistant-purpleair`][ha-purpleair] HACS integration.
 

@@ -3,7 +3,7 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "aiopurpleair-ptr727"
+name = "ptr727-aiopurpleair"
 description = "Async Python client for the PurpleAir API, with the organization endpoint and typed error codes."
 readme = "README.md"
 license = { text = "MIT" }

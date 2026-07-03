@@ -12,7 +12,7 @@ points, and maps the API's documented error codes to a typed exception
 hierarchy.
 
 > Originally derived from [bachya/aiopurpleair][upstream] by Aaron Bach, now
-> independently maintained. Published to PyPI as **`aiopurpleair-ptr727`**; the
+> independently maintained. Published to PyPI as **`ptr727-aiopurpleair`**; the
 > import name stays `aiopurpleair`. See [About and History](#about-and-history).
 
 - [Installation](#installation)
@@ -30,10 +30,10 @@ hierarchy.
 ## Installation
 
 ```bash
-pip install aiopurpleair-ptr727
+pip install ptr727-aiopurpleair
 ```
 
-The distribution name is `aiopurpleair-ptr727` (distinct from the canonical
+The distribution name is `ptr727-aiopurpleair` (distinct from the canonical
 `aiopurpleair` on PyPI); the import path is unchanged:
 
 ```python
@@ -178,7 +178,7 @@ Those additions were proposed upstream, but the upstream maintainer became
 unresponsive and the contribution was abandoned.
 
 Rather than leave the work stranded, it is now maintained here as an
-independent library published as `aiopurpleair-ptr727`. A companion effort — a
+independent library published as `ptr727-aiopurpleair`. A companion effort — a
 PurpleAir integration proposed for Home Assistant core as
 [home-assistant/core#140901][ha-core-pr] — was likewise abandoned and is
 maintained separately as the [`homeassistant-purpleair`][ha-purpleair] HACS
@@ -220,13 +220,13 @@ MIT — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 [ha-core-pr]: https://github.com/home-assistant/core/pull/140901
 [ha-purpleair]: https://github.com/ptr727/homeassistant-purpleair
 [license]: https://github.com/ptr727/aiopurpleair/blob/main/LICENSE
-[license-badge]: https://img.shields.io/pypi/l/aiopurpleair-ptr727.svg
+[license-badge]: https://img.shields.io/pypi/l/ptr727-aiopurpleair.svg
 [ptr727]: https://github.com/ptr727
 [purpleair]: https://www2.purpleair.com/
 [purpleair-api]: https://api.purpleair.com/#api-welcome
-[pypi]: https://pypi.org/project/aiopurpleair-ptr727/
-[pypi-badge]: https://img.shields.io/pypi/v/aiopurpleair-ptr727.svg
-[pyversions-badge]: https://img.shields.io/pypi/pyversions/aiopurpleair-ptr727.svg
+[pypi]: https://pypi.org/project/ptr727-aiopurpleair/
+[pypi-badge]: https://img.shields.io/pypi/v/ptr727-aiopurpleair.svg
+[pyversions-badge]: https://img.shields.io/pypi/pyversions/ptr727-aiopurpleair.svg
 [syrupy]: https://github.com/syrupy-project/syrupy
 [upstream]: https://github.com/bachya/aiopurpleair
 [uv]: https://github.com/astral-sh/uv

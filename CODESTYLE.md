@@ -39,7 +39,7 @@ These apply repo-wide, in every directory:
 
 *This section is the style guide for the Python code this repo ships.*
 
-This repo ships an **installable PyPI package** (`aiopurpleair-ptr727`, import package `aiopurpleair`) using a **src-layout** (`src/aiopurpleair/`), the **hatchling** build backend, and **[uv][uv]** for environment and dependency management (`uv.lock` is committed). Everything runs through `uv run`.
+This repo ships an **installable PyPI package** (`ptr727-aiopurpleair`, import package `aiopurpleair`) using a **src-layout** (`src/aiopurpleair/`), the **hatchling** build backend, and **[uv][uv]** for environment and dependency management (`uv.lock` is committed). Everything runs through `uv run`.
 
 ### Toolchain
 
