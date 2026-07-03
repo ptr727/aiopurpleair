@@ -74,6 +74,7 @@ See [Usage](#usage) for detailed usage instructions.
   - [Installation](#installation)
   - [Questions or Issues](#questions-or-issues)
   - [Build Artifacts](#build-artifacts)
+  - [API Reference](#api-reference)
   - [Contributing](#contributing)
   - [Origin](#origin)
   - [License](#license)
@@ -237,6 +238,19 @@ The distribution name is `ptr727-aiopurpleair` (distinct from the canonical `aio
 - **Versioning**: automatic via [Nerdbank.GitVersioning][nbgv-link] from [`version.json`](./version.json) (`2026.8` base) plus git height; `main` builds a clean stable `X.Y.Z`, `develop` a `X.Y.Z.dev0` prerelease. There is no manual tagging.
 - **Publishing**: releases publish to PyPI over OIDC [Trusted Publishing][trustedpublishing-link] (no stored API token). A shipped-path push to `main` (stable) or `develop` (prerelease), or a manual dispatch, cuts a [GitHub Release][releases-link] and uploads the wheel + sdist to PyPI. See [`WORKFLOW.md`](./WORKFLOW.md) for the complete CI/CD contract.
 
+## API Reference
+
+PurpleAir does not publish an OpenAPI/Swagger spec. This repo reconstructs one at [`docs/purpleair-openapi.yaml`](./docs/purpleair-openapi.yaml) from PurpleAir's [apiDoc][apidoc-link]-generated docs (which serve machine-readable `api_data.js`), using [`scripts/generate_openapi.py`](./scripts/generate_openapi.py). The library's endpoint, field, and error-code coverage is validated against this spec.
+
+Regenerate it after an upstream API change:
+
+```shell
+# Live-fetch https://api.purpleair.com/api_data.js, rebuild and validate the spec
+uv run --with pyyaml --with openapi-spec-validator python scripts/generate_openapi.py
+```
+
+The generator takes the API version from the docs' changelog (the apiDoc build-metadata version lags behind), validates the result, and writes `docs/purpleair-openapi.yaml`. A non-empty diff means the upstream API changed. See [`AGENTS.md`](./AGENTS.md) for how the code is validated against the spec.
+
 ## Contributing
 
 - **Branching workflow**:
@@ -287,6 +301,7 @@ Licensed under the [MIT License][license-link]\
 <!-- Other links -->
 
 [aiohttp-link]: https://github.com/aio-libs/aiohttp
+[apidoc-link]: https://apidocjs.com/
 [bachya-link]: https://github.com/bachya
 [hacorepr-link]: https://github.com/home-assistant/core/pull/140901
 [hapurpleair-link]: https://github.com/ptr727/homeassistant-purpleair

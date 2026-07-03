@@ -1,0 +1,1478 @@
+openapi: 3.0.3
+info:
+  title: PurpleAir API (Unofficial OpenAPI Reconstruction)
+  version: 1.2.0
+  description: Unofficial OpenAPI spec reconstructed from PurpleAir's apiDoc data at /api_data.js. REST
+    API changelog version 1.2.0; apiDoc build-metadata version 1.0.15 lags and is not used. Generated
+    by scripts/generate_openapi.py.
+servers:
+- url: https://api.purpleair.com/v1
+security:
+- ApiKeyHeader: []
+paths:
+  /groups:
+    post:
+      operationId: create-group
+      summary: Create Group
+      description: Creates a new group. Has a default rate limit of 100ms.
+      tags:
+      - groups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name to give the new group.
+      responses:
+        '200':
+          description: Success
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: get-groups-list
+      summary: Get Groups List
+      description: Retrieves a list of all groups owned by the provided api_key. Has a default rate limit
+        of 400ms.
+      tags:
+      - groups
+      responses:
+        '200':
+          description: Group Info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groups:
+                    type: string
+                    description: An array of groups owned by this api_key.
+                  id:
+                    type: number
+                    description: The group id for the entry.
+                  name:
+                    type: string
+                    description: The group name for the entry.
+                  created:
+                    type: number
+                    description: The UTC timestamp from when the entry was created.
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /groups/{group_id}:
+    delete:
+      operationId: delete-group
+      summary: Delete Group
+      description: As a safety precaution, attempting to delete a group with members will result in an
+        error. Please delete the members first. Has a default rate limit of 100ms.
+      tags:
+      - groups
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        description: Groups unique ID.
+        schema:
+          type: number
+      responses:
+        '200':
+          description: Success
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: get-group-detail
+      summary: Get Group Detail
+      description: Retrieves a list of all members of the specified group. Has a default rate limit of
+        100ms.
+      tags:
+      - groups
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        description: The group_id of the requested group. This group must be owned by the api_key.
+        schema:
+          type: number
+      responses:
+        '200':
+          description: Success
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /groups/{group_id}/members:
+    post:
+      operationId: create-member
+      summary: Create Member
+      description: Creates a member of the specified group from the provided sensor. A successful call
+        typically costs more than 150 points, due to all real-time fields being returned for the newly
+        created group member. Has a default rate limit of 100ms.
+      tags:
+      - groups
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        description: The group_id of the group to add a member to. This group must be owned by the api_key.
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sensor_id:
+                  type: string
+                  description: The sensor_id of the new member sensor. This must be AS PRINTED on the
+                    sensor’s label.
+                sensor_index:
+                  type: integer
+                  description: The sensor_index of the new member as found in the JSON for this specific
+                    sensor.
+                owner_email:
+                  type: string
+                  description: An email address that matches the Owner email as set by previously completing
+                    the PurpleAir registration form at www.purpleair.com/register.
+                location_type:
+                  type: integer
+                  description: 'The expected location_type of the new member. Possible values are: 0 =
+                    Outside or 1 = Inside. If the target member is not of this type, an error will result.
+                    NOTE: This value is required if the sensor in question is marked as ‘private’ on the
+                    registration form.'
+      responses:
+        '201':
+          description: Success 201
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  group_id:
+                    type: integer
+                    description: The group ID that was included in the request.
+                  member_id:
+                    type: integer
+                    description: The member ID that was included in the request.
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: get-members-data
+      summary: Get Members Data
+      description: Retrieves a list of all sensors in the specified group. Has a default rate limit of
+        500ms. The returned JSON is identical to the Sensors -> Current Readings API section and is detailed
+        again below for your convenience.
+      tags:
+      - groups
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        description: The group_id of the requested group. This group must be owned by the api_key.
+        schema:
+          type: number
+      - name: fields
+        in: query
+        description: 'The ''Fields'' parameter specifies which ''sensor data fields'' to include in the
+          response. It accepts a comma-separated list of field names, optionally with per-field formatting
+          options. For descriptions of individual fields, please see the ''sensor data fields'' section.
+          Station information and status fields: name, icon, model, hardware, location_type, private,
+          latitude, longitude, altitude, position_rating, led_brightness, firmware_version, firmware_upgrade,
+          rssi, uptime, pa_latency, memory, last_seen, last_modified, date_created, channel_state, channel_flags,
+          channel_flags_manual, channel_flags_auto, confidence, confidence_manual, confidence_auto Environmental
+          fields: humidity, humidity_a, humidity_b, temperature, temperature_a, temperature_b, pressure,
+          pressure_a, pressure_b Miscellaneous fields: voc, voc_a, voc_b, ozone1, analog_input PM1.0 fields:
+          pm1.0, pm1.0_a, pm1.0_b, pm1.0_atm, pm1.0_atm_a, pm1.0_atm_b, pm1.0_cf_1, pm1.0_cf_1_a, pm1.0_cf_1_b
+          PM2.5 fields: pm2.5_alt, pm2.5_alt_a, pm2.5_alt_b, pm2.5, pm2.5_a, pm2.5_b, pm2.5_atm, pm2.5_atm_a,
+          pm2.5_atm_b, pm2.5_cf_1, pm2.5_cf_1_a, pm2.5_cf_1_b PM2.5 pseudo (simple running) average fields:
+          pm2.5_10minute, pm2.5_10minute_a, pm2.5_10minute_b, pm2.5_30minute, pm2.5_30minute_a, pm2.5_30minute_b,
+          pm2.5_60minute, pm2.5_60minute_a, pm2.5_60minute_b, pm2.5_6hour, pm2.5_6hour_a, pm2.5_6hour_b,
+          pm2.5_24hour, pm2.5_24hour_a, pm2.5_24hour_b, pm2.5_1week, pm2.5_1week_a, pm2.5_1week_b PM10.0
+          fields: pm10.0, pm10.0_a, pm10.0_b, pm10.0_atm, pm10.0_atm_a, pm10.0_atm_b, pm10.0_cf_1, pm10.0_cf_1_a,
+          pm10.0_cf_1_b Visibility fields: scattering_coefficient, scattering_coefficient_a, scattering_coefficient_b,
+          deciviews, deciviews_a, deciviews_b, visual_range, visual_range_a, visual_range_b Particle count
+          fields: 0.3_um_count, 0.3_um_count_a, 0.3_um_count_b, 0.5_um_count, 0.5_um_count_a, 0.5_um_count_b,
+          1.0_um_count, 1.0_um_count_a, 1.0_um_count_b, 2.5_um_count, 2.5_um_count_a, 2.5_um_count_b,
+          5.0_um_count, 5.0_um_count_a, 5.0_um_count_b, 10.0_um_count 10.0_um_count_a, 10.0_um_count_b
+          Obsolete: Thingspeak is no longer used to store data, so the following fields are no longer
+          relevant. ThingSpeak fields, used to retrieve data from api.thingspeak.com: primary_id_a, primary_key_a,
+          secondary_id_a, secondary_key_a, primary_id_b, primary_key_b, secondary_id_b, secondary_key_b
+          Configurable Decimal Places You can control how many decimal places are returned for each numeric
+          field by using the syntax: fieldname|dN, where N is the maximum number of decimal places to
+          include. For example, if pm2.5_atm_a is recorded as 3.23: Requested Field Returned Value pm2.5_atm_a|d0
+          3 pm2.5_atm_a|d1 3.2 pm2.5_atm_a|d2 3.23 pm2.5_atm_a|d3 3.23 Note: No trailing zeros are added
+          if the requested number of decimal places exceeds those present in the stored value. Requesting
+          pm2.5_atm_a|d3 in the table above returns 3.23 rather than 3.230, because 3.23 is the actual
+          value stored in the database. As decimal places are configurable per field, varying precision
+          levels can be applied to different fields in the same request: fields=temperature|d1,pm2.5_atm_a|d2,pm2.5_atm_b|d0'
+        schema:
+          type: string
+        required: true
+      - name: location_type
+        in: query
+        description: 'The location_type of the sensors. Possible values are: 0 = Outside or 1 = Inside.'
+        schema:
+          type: number
+      - name: read_keys
+        in: query
+        description: 'A read_key is required for private devices. It is separate to the api_key and each
+          sensor has its own read_key. Submit multiple keys by separating them with a comma (,) character
+          for example: key-one,key-two,key-three.'
+        schema:
+          type: string
+      - name: show_only
+        in: query
+        description: A comma (,) separated list of sensor_index values. When provided, the results are
+          limited only to the sensors included in this list. Nullifies modified_since to take no effect
+          if both are included.
+        schema:
+          type: string
+      - name: modified_since
+        in: query
+        description: The modified_since parameter causes only sensors modified after the provided time
+          stamp to be included in the results. Using the data_time_stamp value from a previous call (recommended)
+          will limit results to those with new values since the last request. Using a value of 0 will
+          match sensors modified at any time. Does not take effect if the show_only parameter is included
+          as part of the request.
+        schema:
+          type: integer
+      - name: max_age
+        in: query
+        description: Filter results to only include sensors modified or updated within the last number
+          of seconds. Using a value of 0 will match sensors of any age.
+        schema:
+          type: integer
+      - name: nwlat
+        in: query
+        description: A north west latitude for the bounding box. Use a bounding box to limit the sensors
+          returned to a specific geographic area. The bounding box is defined by two points, a north west
+          latitude/longitude and a south east latitude/longitude. Our community article here demonstrates
+          using a bounding box in an API call.
+        schema:
+          type: number
+      - name: nwlng
+        in: query
+        description: A north west longitude for the bounding box.
+        schema:
+          type: number
+      - name: selat
+        in: query
+        description: A south east latitude for the bounding box.
+        schema:
+          type: number
+      - name: selng
+        in: query
+        description: A south east longitude for the bounding box.
+        schema:
+          type: number
+      responses:
+        '200':
+          description: Success 200
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fields:
+                    type: string
+                    description: An array of values representing the headers for the "data" object and
+                      describes the meanings of the columns in the data object. For example, fields[column]
+                      is the header for data[row][column]. You should always identify the data column
+                      index by looking for the desired header in the fields array since the column order
+                      is not guaranteed to always stay the same.
+                  location_types:
+                    type: string
+                    description: 'When the data includes a location_type, this field is included with
+                      the following values: ["outside", "inside"] An array representing the values for
+                      the location_type column Possible values are: 0 = Outside or 1 = Inside.'
+                  channel_states:
+                    type: string
+                    description: '["No PM", "PM-A", "PM-B", "PM-A+PM-B"] Possible values are: No PM =
+                      No PM sensors were detected. PM-A = PM sensor on channel A only. PM-B = PM sensor
+                      on channel B only. PM-A+PM-B = PM sensor on both channel A and B.'
+                  channel_flags:
+                    type: string
+                    description: '["Normal", "A-Downgraded", "B-Downgraded", "A+B-Downgraded"] Possible
+                      values are: Normal = No PM sensors are marked as downgraded. A-Downgraded = PM sensor
+                      on channel A is marked as downgraded. B-Downgraded = PM sensor on channel B is marked
+                      as downgraded. A+B-Downgraded = PM sensors on both channels A and B are marked as
+                      downgraded. Includes downgrades manually set by PurpleAir and downgrades set automatically
+                      by PurpleAir systems.'
+                  channel_flags_auto:
+                    type: string
+                    description: the same as channel_flags, but only reflects downgrades set automatically
+                      by PurpleAir systems.
+                  channel_flags_manual:
+                    type: string
+                    description: the same as channel_flags, but only reflects downgrades manually set
+                      by PurpleAir.
+                  data:
+                    type: object
+                    description: An array of comma separated values, described by the fields array. Always
+                      use the item index from the desired fields value to lookup the correct data column
+                      since the order may change as columns are included or excluded.
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /groups/{group_id}/members/{member_id}:
+    delete:
+      operationId: delete-member
+      summary: Delete Member
+      description: Deletes a member from the specified group. Has a default rate limit of 100ms.
+      tags:
+      - groups
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        description: Groups unique ID.
+        schema:
+          type: number
+      - name: member_id
+        in: path
+        required: true
+        description: Members unique ID.
+        schema:
+          type: number
+      responses:
+        '200':
+          description: Success
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: get-member-data
+      summary: Get Member Data
+      description: Retrieves the latest data of a single sensor matching the provided member_id. Has a
+        default rate limit of 100ms.
+      tags:
+      - groups
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        description: Groups unique ID.
+        schema:
+          type: number
+      - name: member_id
+        in: path
+        required: true
+        description: Members unique ID.
+        schema:
+          type: number
+      - name: fields
+        in: query
+        description: 'The ''Fields'' parameter specifies which ''sensor data fields'' to include in the
+          response. It accepts a comma-separated list of field names, optionally with per-field formatting
+          options. For descriptions of individual fields, please see the ''sensor data fields'' section.
+          Station information and status fields: name, icon, model, hardware, location_type, private,
+          latitude, longitude, altitude, position_rating, led_brightness, firmware_version, firmware_upgrade,
+          rssi, uptime, pa_latency, memory, last_seen, last_modified, date_created, channel_state, channel_flags,
+          channel_flags_manual, channel_flags_auto, confidence, confidence_manual, confidence_auto Environmental
+          fields: humidity, humidity_a, humidity_b, temperature, temperature_a, temperature_b, pressure,
+          pressure_a, pressure_b Miscellaneous fields: voc, voc_a, voc_b, ozone1, analog_input PM1.0 fields:
+          pm1.0, pm1.0_a, pm1.0_b, pm1.0_atm, pm1.0_atm_a, pm1.0_atm_b, pm1.0_cf_1, pm1.0_cf_1_a, pm1.0_cf_1_b
+          PM2.5 fields: pm2.5_alt, pm2.5_alt_a, pm2.5_alt_b, pm2.5, pm2.5_a, pm2.5_b, pm2.5_atm, pm2.5_atm_a,
+          pm2.5_atm_b, pm2.5_cf_1, pm2.5_cf_1_a, pm2.5_cf_1_b PM2.5 pseudo (simple running) average fields:
+          pm2.5_10minute, pm2.5_10minute_a, pm2.5_10minute_b, pm2.5_30minute, pm2.5_30minute_a, pm2.5_30minute_b,
+          pm2.5_60minute, pm2.5_60minute_a, pm2.5_60minute_b, pm2.5_6hour, pm2.5_6hour_a, pm2.5_6hour_b,
+          pm2.5_24hour, pm2.5_24hour_a, pm2.5_24hour_b, pm2.5_1week, pm2.5_1week_a, pm2.5_1week_b PM10.0
+          fields: pm10.0, pm10.0_a, pm10.0_b, pm10.0_atm, pm10.0_atm_a, pm10.0_atm_b, pm10.0_cf_1, pm10.0_cf_1_a,
+          pm10.0_cf_1_b Particle count fields: 0.3_um_count, 0.3_um_count_a, 0.3_um_count_b, 0.5_um_count,
+          0.5_um_count_a, 0.5_um_count_b, 1.0_um_count, 1.0_um_count_a, 1.0_um_count_b, 2.5_um_count,
+          2.5_um_count_a, 2.5_um_count_b, 5.0_um_count, 5.0_um_count_a, 5.0_um_count_b, 10.0_um_count
+          10.0_um_count_a, 10.0_um_count_b Obsolete: Thingspeak is no longer used to store data, so the
+          following fields are no longer relevant. ThingSpeak fields, used to retrieve data from api.thingspeak.com:
+          primary_id_a, primary_key_a, secondary_id_a, secondary_key_a, primary_id_b, primary_key_b, secondary_id_b,
+          secondary_key_b Configurable Decimal Places You can control how many decimal places are returned
+          for each numeric field by using the syntax: fieldname|dN, where N is the maximum number of decimal
+          places to include. For example, if pm2.5_atm_a is recorded as 3.23: Requested Field Returned
+          Value pm2.5_atm_a|d0 3 pm2.5_atm_a|d1 3.2 pm2.5_atm_a|d2 3.23 pm2.5_atm_a|d3 3.23 Note: No trailing
+          zeros are added if the requested number of decimal places exceeds those present in the stored
+          value. Requesting pm2.5_atm_a|d3 in the table above returns 3.23 rather than 3.230, because
+          3.23 is the actual value stored in the database. As decimal places are configurable per field,
+          varying precision levels can be applied to different fields in the same request: fields=temperature|d1,pm2.5_atm_a|d2,pm2.5_atm_b|d0'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Sensor data stats object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pm2.5:
+                    type: number
+                    description: Estimated mass concentration PM2.5 (µg/m³). PM2.5 are fine particulates
+                      with a diameter of fewer than 2.5 microns.
+                  pm2.5_10minute:
+                    type: number
+                    description: 10 minute pseudo (estimated) average for PM2.5
+                  pm2.5_30minute:
+                    type: number
+                    description: 30 minute pseudo (estimated) average for PM2.5
+                  pm2.5_60minute:
+                    type: number
+                    description: 60 minute pseudo (estimated) average for PM2.5
+                  pm2.5_6hour:
+                    type: number
+                    description: 6 Hour pseudo (estimated) average for PM2.5
+                  pm2.5_24hour:
+                    type: number
+                    description: 24 hour pseudo (estimated) average for PM2.5
+                  pm2.5_1week:
+                    type: number
+                    description: 1 week pseudo (estimated) average for PM2.5
+                  time_stamp:
+                    type: integer
+                    description: The servers UTC (Unix) time stamp from when data was received for this
+                      channel.
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /groups/{group_id}/members/{member_id}/history/csv:
+    get:
+      operationId: get-member-history
+      summary: Get Member History
+      description: Retrieves historical data for a single sensor matching the provided member_id. Has
+        a default rate limit of 1000ms (1 second).
+      tags:
+      - groups
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        description: Groups unique ID.
+        schema:
+          type: number
+      - name: member_id
+        in: path
+        required: true
+        description: Members unique ID.
+        schema:
+          type: number
+      - name: privacy
+        in: query
+        description: The privacy of returned data. Sensors can record data while registered as public
+          or private. auto (default if not specified) returns data with privacy matching the sensor's
+          current registration. both returns all data regardless of privacy and adds the private field
+          to the returned data columns.
+        schema:
+          type: string
+      - name: start_timestamp
+        in: query
+        description: The time stamp of the first required history entry. Query is executed using data_time_stamp
+          >= start_timestamp. This can be specified as a UNIX time stamp in seconds or an ISO 8601 string.
+          If not specified, the maximum amount of data for the requested average will be returned up to
+          the provided end_timestamp. The time_stamp column of data in the response's JSON or CSV will
+          use the same format and/or time zone used in the start_timestamp.
+        schema:
+          type: integer
+      - name: end_timestamp
+        in: query
+        description: The end time stamp of the history to return. Query is executed using data_time_stamp
+          < end_timestamp. This can be specified as a UNIX time stamp in seconds or an ISO 8601 string.
+          If not specified, the maximum amount of data for the requested average will be returned starting
+          from the provided start_timestamp.
+        schema:
+          type: integer
+      - name: average
+        in: query
+        description: 'The desired average in minutes. The amount of data that can be returned in a single
+          response depends on the average used in the request. Valid values are as follows: Average Maximum
+          Data Returnable per Request 0 (Real-time) 30 days 10 (10-minute) 60 days 30 (30-minute) 90 days
+          60 (1-hour) 180 days 360 (6-hour) 1 year 1440 (1-day) 2 years 10080 (1-week) 5 years 43200 (1-month)
+          20 years 525600 (1-year) 100 years'
+        schema:
+          type: integer
+      - name: fields
+        in: query
+        description: 'The ''Fields'' parameter specifies which ''sensor data fields'' to include in the
+          response. It accepts a comma-separated list of field names, optionally with per-field formatting
+          options. For descriptions of individual fields, please see the ''sensor data fields'' section.
+          Note: Not all fields are available as history fields and we will be working to add more as time
+          goes on. Fields marked with an asterisk (*) may not be available when using averages. Station
+          information and status fields: hardware*, latitude*, longitude*, altitude*, firmware_version*,
+          private, rssi, uptime, pa_latency, memory Environmental fields: humidity, humidity_a, humidity_b,
+          temperature, temperature_a, temperature_b, pressure, pressure_a, pressure_b Miscellaneous fields:
+          voc, voc_a, voc_b, analog_input PM1.0 fields: pm1.0_atm, pm1.0_atm_a, pm1.0_atm_b, pm1.0_cf_1,
+          pm1.0_cf_1_a, pm1.0_cf_1_b PM2.5 fields: pm2.5_alt, pm2.5_alt_a, pm2.5_alt_b, pm2.5_atm, pm2.5_atm_a,
+          pm2.5_atm_b, pm2.5_cf_1, pm2.5_cf_1_a, pm2.5_cf_1_b PM10.0 fields: pm10.0_atm, pm10.0_atm_a,
+          pm10.0_atm_b, pm10.0_cf_1, pm10.0_cf_1_a, pm10.0_cf_1_b Visibility fields: scattering_coefficient,
+          scattering_coefficient_a, scattering_coefficient_b, deciviews, deciviews_a, deciviews_b, visual_range,
+          visual_range_a, visual_range_b Particle count fields: 0.3_um_count, 0.3_um_count_a, 0.3_um_count_b,
+          0.5_um_count, 0.5_um_count_a, 0.5_um_count_b, 1.0_um_count, 1.0_um_count_a, 1.0_um_count_b,
+          2.5_um_count, 2.5_um_count_a, 2.5_um_count_b, 5.0_um_count, 5.0_um_count_a, 5.0_um_count_b,
+          10.0_um_count, 10.0_um_count_a, 10.0_um_count_b Configurable Decimal Places You can control
+          how many decimal places are returned for each numeric field by using the syntax: fieldname|dN,
+          where N is the maximum number of decimal places to include. For example, if pm2.5_atm_a is recorded
+          as 3.23: Requested Field Returned Value pm2.5_atm_a|d0 3 pm2.5_atm_a|d1 3.2 pm2.5_atm_a|d2 3.23
+          pm2.5_atm_a|d3 3.23 Note: No trailing zeros are added if the requested number of decimal places
+          exceeds those present in the stored value. Requesting pm2.5_atm_a|d3 in the table above returns
+          3.23 rather than 3.230, because 3.23 is the actual value stored in the database. As decimal
+          places are configurable per field, varying precision levels can be applied to different fields
+          in the same request: fields=temperature|d1,pm2.5_atm_a|d2,pm2.5_atm_b|d0'
+        schema:
+          type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /keys:
+    get:
+      operationId: check-api-key
+      summary: Check an API Key
+      description: Checks the validity and returns the key type for the provided api_key. Has a default
+        rate limit of 100ms. The key is provided using any of the three ways to present an api_key.
+      tags:
+      - keys
+      responses:
+        '200':
+          description: Key Info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key_type:
+                    type: string
+                    description: 'The api_key type. UNKNOWN: The key type is unknown. Contact PurpleAir.
+                      READ: A key that works for requests requiring a READ key. Used for API requests
+                      that read data. WRITE: A key that works for requests requiring a WRITE key. Used
+                      for API requests that modify data. READ_DISABLED: A read key that was administratively
+                      disabled. If your key is returning this type, please contact PurpleAir. WRITE_DISABLED:
+                      A write key that was administratively disabled. If your key is returning this type,
+                      please contact PurpleAir.'
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /organization:
+    get:
+      operationId: get-organization-data
+      summary: Get Organization Data
+      description: Retrieves information for the organization containing the provided api_key. Has a default
+        rate limit of 1000ms (1 second).
+      tags:
+      - organization
+      responses:
+        '200':
+          description: Organization Info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organization_id:
+                    type: string
+                    description: A unique identifier for the organization represented in hexadecimal.
+                  organization_name:
+                    type: string
+                    description: The organization's name. This can be changed in the Developer Dashboard.
+                  remaining_points:
+                    type: number
+                    description: The organization's current point balance.
+                  consumption_rate:
+                    type: number
+                    description: Estimated points consumption per day.
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /sensors:
+    get:
+      operationId: get-sensors-data
+      summary: Get Sensors Data
+      description: Retrieves a list with the latest data from multiple sensors. Has a default rate limit
+        of 500ms. By default, data for every public sensor is returned. When making repeated queries,
+        it's recommended to use modified_since to only obtain new data.
+      tags:
+      - sensors
+      parameters:
+      - name: fields
+        in: query
+        description: 'The ''Fields'' parameter specifies which ''sensor data fields'' to include in the
+          response. It accepts a comma-separated list of field names, optionally with per-field formatting
+          options. For descriptions of individual fields, please see the ''sensor data fields'' section.
+          Station information and status fields: name, icon, model, hardware, location_type, private,
+          latitude, longitude, altitude, position_rating, led_brightness, firmware_version, firmware_upgrade,
+          rssi, uptime, pa_latency, memory, last_seen, last_modified, date_created, channel_state, channel_flags,
+          channel_flags_manual, channel_flags_auto, confidence, confidence_manual, confidence_auto Environmental
+          fields: humidity, humidity_a, humidity_b, temperature, temperature_a, temperature_b, pressure,
+          pressure_a, pressure_b Miscellaneous fields: voc, voc_a, voc_b, ozone1, analog_input PM1.0 fields:
+          pm1.0, pm1.0_a, pm1.0_b, pm1.0_atm, pm1.0_atm_a, pm1.0_atm_b, pm1.0_cf_1, pm1.0_cf_1_a, pm1.0_cf_1_b
+          PM2.5 fields: pm2.5_alt, pm2.5_alt_a, pm2.5_alt_b, pm2.5, pm2.5_a, pm2.5_b, pm2.5_atm, pm2.5_atm_a,
+          pm2.5_atm_b, pm2.5_cf_1, pm2.5_cf_1_a, pm2.5_cf_1_b PM2.5 pseudo (simple running) average fields:
+          pm2.5_10minute, pm2.5_10minute_a, pm2.5_10minute_b, pm2.5_30minute, pm2.5_30minute_a, pm2.5_30minute_b,
+          pm2.5_60minute, pm2.5_60minute_a, pm2.5_60minute_b, pm2.5_6hour, pm2.5_6hour_a, pm2.5_6hour_b,
+          pm2.5_24hour, pm2.5_24hour_a, pm2.5_24hour_b, pm2.5_1week, pm2.5_1week_a, pm2.5_1week_b PM10.0
+          fields: pm10.0, pm10.0_a, pm10.0_b, pm10.0_atm, pm10.0_atm_a, pm10.0_atm_b, pm10.0_cf_1, pm10.0_cf_1_a,
+          pm10.0_cf_1_b Visibility fields: scattering_coefficient, scattering_coefficient_a, scattering_coefficient_b,
+          deciviews, deciviews_a, deciviews_b, visual_range, visual_range_a, visual_range_b Particle count
+          fields: 0.3_um_count, 0.3_um_count_a, 0.3_um_count_b, 0.5_um_count, 0.5_um_count_a, 0.5_um_count_b,
+          1.0_um_count, 1.0_um_count_a, 1.0_um_count_b, 2.5_um_count, 2.5_um_count_a, 2.5_um_count_b,
+          5.0_um_count, 5.0_um_count_a, 5.0_um_count_b, 10.0_um_count 10.0_um_count_a, 10.0_um_count_b
+          Obsolete: Thingspeak is no longer used to store data, so the following fields are no longer
+          relevant. ThingSpeak fields, used to retrieve data from api.thingspeak.com: primary_id_a, primary_key_a,
+          secondary_id_a, secondary_key_a, primary_id_b, primary_key_b, secondary_id_b, secondary_key_b
+          Configurable Decimal Places You can control how many decimal places are returned for each numeric
+          field by using the syntax: fieldname|dN, where N is the maximum number of decimal places to
+          include. For example, if pm2.5_atm_a is recorded as 3.23: Requested Field Returned Value pm2.5_atm_a|d0
+          3 pm2.5_atm_a|d1 3.2 pm2.5_atm_a|d2 3.23 pm2.5_atm_a|d3 3.23 Note: No trailing zeros are added
+          if the requested number of decimal places exceeds those present in the stored value. Requesting
+          pm2.5_atm_a|d3 in the table above returns 3.23 rather than 3.230, because 3.23 is the actual
+          value stored in the database. As decimal places are configurable per field, varying precision
+          levels can be applied to different fields in the same request: fields=temperature|d1,pm2.5_atm_a|d2,pm2.5_atm_b|d0'
+        schema:
+          type: string
+        required: true
+      - name: location_type
+        in: query
+        description: 'The location_type of the sensors. Possible values are: 0 = Outside or 1 = Inside.'
+        schema:
+          type: number
+      - name: read_keys
+        in: query
+        description: 'A read_key is required for private devices. It is separate to the api_key and each
+          sensor has its own read_key. Submit multiple keys by separating them with a comma (,) character
+          for example: key-one,key-two,key-three.'
+        schema:
+          type: string
+      - name: show_only
+        in: query
+        description: A comma (,) separated list of sensor_index values. When provided, the results are
+          limited only to the sensors included in this list. Nullifies modified_since to take no effect
+          if both are included.
+        schema:
+          type: string
+      - name: modified_since
+        in: query
+        description: The modified_since parameter causes only sensors modified after the provided time
+          stamp to be included in the results. Using the data_time_stamp value from a previous call (recommended)
+          will limit results to those with new values since the last request. Using a value of 0 will
+          match sensors modified at any time. Does not take effect if the show_only parameter is included
+          as part of the request.
+        schema:
+          type: integer
+      - name: max_age
+        in: query
+        description: Filter results to only include sensors modified or updated within the last number
+          of seconds. Using a value of 0 will match sensors of any age.
+        schema:
+          type: integer
+      - name: nwlat
+        in: query
+        description: A north west latitude for the bounding box. Use a bounding box to limit the sensors
+          returned to a specific geographic area. The bounding box is defined by two points, a north west
+          latitude/longitude and a south east latitude/longitude. Our community article here demonstrates
+          using a bounding box in an API call.
+        schema:
+          type: number
+      - name: nwlng
+        in: query
+        description: A north west longitude for the bounding box.
+        schema:
+          type: number
+      - name: selat
+        in: query
+        description: A south east latitude for the bounding box.
+        schema:
+          type: number
+      - name: selng
+        in: query
+        description: A south east longitude for the bounding box.
+        schema:
+          type: number
+      responses:
+        '200':
+          description: Success 200
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fields:
+                    type: string
+                    description: An array of values representing the headers for the "data" object and
+                      describes the meanings of the columns in the data object. For example, fields[column]
+                      is the header for data[row][column]. You should always identify the data column
+                      index by looking for the desired header in the fields array since the column order
+                      is not guaranteed to always stay the same.
+                  location_types:
+                    type: string
+                    description: 'When the data includes a location_type, this field is included with
+                      the following values: ["outside", "inside"] An array representing the values for
+                      the location_type column Possible values are: 0 = Outside or 1 = Inside.'
+                  channel_states:
+                    type: string
+                    description: '["No PM", "PM-A", "PM-B", "PM-A+PM-B"] Possible values are: No PM =
+                      No PM sensors were detected. PM-A = PM sensor on channel A only. PM-B = PM sensor
+                      on channel B only. PM-A+PM-B = PM sensor on both channel A and B.'
+                  channel_flags:
+                    type: string
+                    description: '["Normal", "A-Downgraded", "B-Downgraded", "A+B-Downgraded"] Possible
+                      values are: Normal = No PM sensors are marked as downgraded. A-Downgraded = PM sensor
+                      on channel A is marked as downgraded. B-Downgraded = PM sensor on channel B is marked
+                      as downgraded. A+B-Downgraded = PM sensors on both channels A and B are marked as
+                      downgraded. Includes downgrades manually set by PurpleAir and downgrades set automatically
+                      by PurpleAir systems.'
+                  channel_flags_auto:
+                    type: string
+                    description: the same as channel_flags, but only reflects downgrades set automatically
+                      by PurpleAir systems.
+                  channel_flags_manual:
+                    type: string
+                    description: the same as channel_flags, but only reflects downgrades manually set
+                      by PurpleAir.
+                  data:
+                    type: object
+                    description: An array of comma separated values, described by the fields array. Always
+                      use the item index from the desired fields value to lookup the correct data column
+                      since the order may change as columns are included or excluded.
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /sensors/{sensor_index}:
+    get:
+      operationId: get-sensor-data
+      summary: Get Sensor Data
+      description: Retrieves the latest data of a single sensor matching the provided sensor_index. Has
+        a default rate limit of 100ms. Because the latest data is always returned, repeated calls for
+        the same sensor will receive the same data until that sensor next reports in. To determine when
+        returned data was reported, the last_seen field can be requested.
+      tags:
+      - sensors
+      parameters:
+      - name: sensor_index
+        in: path
+        required: true
+        description: The sensor_index as found in the JSON for this specific sensor.
+        schema:
+          type: integer
+      - name: read_key
+        in: query
+        description: 'This read_key is required for private devices. It is separate to the api_key and
+          each sensor has its own read_key. Submit multiple keys by separating them with a comma (,) character
+          for example: key-one,key-two,key-three.'
+        schema:
+          type: string
+      - name: fields
+        in: query
+        description: 'The ''Fields'' parameter specifies which ''sensor data fields'' to include in the
+          response. It accepts a comma-separated list of field names, optionally with per-field formatting
+          options. For descriptions of individual fields, please see the ''sensor data fields'' section.
+          Station information and status fields: name, icon, model, hardware, location_type, private,
+          latitude, longitude, altitude, position_rating, led_brightness, firmware_version, firmware_upgrade,
+          rssi, uptime, pa_latency, memory, last_seen, last_modified, date_created, channel_state, channel_flags,
+          channel_flags_manual, channel_flags_auto, confidence, confidence_manual, confidence_auto Environmental
+          fields: humidity, humidity_a, humidity_b, temperature, temperature_a, temperature_b, pressure,
+          pressure_a, pressure_b Miscellaneous fields: voc, voc_a, voc_b, ozone1, analog_input PM1.0 fields:
+          pm1.0, pm1.0_a, pm1.0_b, pm1.0_atm, pm1.0_atm_a, pm1.0_atm_b, pm1.0_cf_1, pm1.0_cf_1_a, pm1.0_cf_1_b
+          PM2.5 fields: pm2.5_alt, pm2.5_alt_a, pm2.5_alt_b, pm2.5, pm2.5_a, pm2.5_b, pm2.5_atm, pm2.5_atm_a,
+          pm2.5_atm_b, pm2.5_cf_1, pm2.5_cf_1_a, pm2.5_cf_1_b PM2.5 pseudo (simple running) average fields:
+          pm2.5_10minute, pm2.5_10minute_a, pm2.5_10minute_b, pm2.5_30minute, pm2.5_30minute_a, pm2.5_30minute_b,
+          pm2.5_60minute, pm2.5_60minute_a, pm2.5_60minute_b, pm2.5_6hour, pm2.5_6hour_a, pm2.5_6hour_b,
+          pm2.5_24hour, pm2.5_24hour_a, pm2.5_24hour_b, pm2.5_1week, pm2.5_1week_a, pm2.5_1week_b PM10.0
+          fields: pm10.0, pm10.0_a, pm10.0_b, pm10.0_atm, pm10.0_atm_a, pm10.0_atm_b, pm10.0_cf_1, pm10.0_cf_1_a,
+          pm10.0_cf_1_b Particle count fields: 0.3_um_count, 0.3_um_count_a, 0.3_um_count_b, 0.5_um_count,
+          0.5_um_count_a, 0.5_um_count_b, 1.0_um_count, 1.0_um_count_a, 1.0_um_count_b, 2.5_um_count,
+          2.5_um_count_a, 2.5_um_count_b, 5.0_um_count, 5.0_um_count_a, 5.0_um_count_b, 10.0_um_count
+          10.0_um_count_a, 10.0_um_count_b Obsolete: Thingspeak is no longer used to store data, so the
+          following fields are no longer relevant. ThingSpeak fields, used to retrieve data from api.thingspeak.com:
+          primary_id_a, primary_key_a, secondary_id_a, secondary_key_a, primary_id_b, primary_key_b, secondary_id_b,
+          secondary_key_b Configurable Decimal Places You can control how many decimal places are returned
+          for each numeric field by using the syntax: fieldname|dN, where N is the maximum number of decimal
+          places to include. For example, if pm2.5_atm_a is recorded as 3.23: Requested Field Returned
+          Value pm2.5_atm_a|d0 3 pm2.5_atm_a|d1 3.2 pm2.5_atm_a|d2 3.23 pm2.5_atm_a|d3 3.23 Note: No trailing
+          zeros are added if the requested number of decimal places exceeds those present in the stored
+          value. Requesting pm2.5_atm_a|d3 in the table above returns 3.23 rather than 3.230, because
+          3.23 is the actual value stored in the database. As decimal places are configurable per field,
+          varying precision levels can be applied to different fields in the same request: fields=temperature|d1,pm2.5_atm_a|d2,pm2.5_atm_b|d0'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success 200
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  time_stamp:
+                    type: integer
+                    description: The servers UTC (Unix) time stamp from when data was received for this
+                      channel.
+                  data_time_stamp:
+                    type: integer
+                    description: The UNIX time stamp for when data was loaded from the database. The response's
+                      data is current up until the data_time_stamp, which can be up to 30 seconds behind
+                      the response's time_stamp
+                  sensor:
+                    type: object
+                    description: A JSON object with name value pairs representing the sensor's last known
+                      state for fields requested in the fields parameter. See the 'Sensor data fields'
+                      section below for a lsit of possible values.
+                  pm2.5:
+                    type: number
+                    description: Estimated mass concentration PM2.5 (µg/m³). PM2.5 are fine particulates
+                      with a diameter of fewer than 2.5 microns.
+                  pm2.5_10minute:
+                    type: number
+                    description: 10 minute pseudo (estimated) average for PM2.5
+                  pm2.5_30minute:
+                    type: number
+                    description: 30 minute pseudo (estimated) average for PM2.5
+                  pm2.5_60minute:
+                    type: number
+                    description: 60 minute pseudo (estimated) average for PM2.5
+                  pm2.5_6hour:
+                    type: number
+                    description: 6 Hour pseudo (estimated) average for PM2.5
+                  pm2.5_24hour:
+                    type: number
+                    description: 24 hour pseudo (estimated) average for PM2.5
+                  pm2.5_1week:
+                    type: number
+                    description: 1 week pseudo (estimated) average for PM2.5
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /sensors/{sensor_index}/history:
+    get:
+      operationId: get-sensor-history
+      summary: Get Sensor History
+      description: Retrieves the latest history of a single sensor matching the provided sensor_index.
+        Has a default rate limit of 1000ms (1 second). When using only a single start_timestamp or end_timestamp,
+        the maximum amount of data will be returned (dependent on the provided average). If a smaller
+        amount of data is needed, supplying both timestamp parameters is recommended to conserve points.
+      tags:
+      - sensors
+      parameters:
+      - name: sensor_index
+        in: path
+        required: true
+        description: The sensor_index as found in the JSON for this specific sensor.
+        schema:
+          type: integer
+      - name: read_key
+        in: query
+        description: 'This read_key is required for private devices. It is separate to the api_key and
+          each sensor has its own read_key. Submit multiple keys by separating them with a comma (,) character
+          for example: key-one,key-two,key-three.'
+        schema:
+          type: string
+      - name: privacy
+        in: query
+        description: The privacy of returned data. Sensors can record data while registered as public
+          or private. Obtaining private data requires the sensor's read_key be provided. auto (default
+          if not specified) returns data with privacy matching the sensor's current registration. both
+          returns all data regardless of privacy and adds the private field to the returned data columns.
+        schema:
+          type: string
+      - name: start_timestamp
+        in: query
+        description: The time stamp of the first required history entry. Query is executed using data_time_stamp
+          >= start_timestamp. This can be specified as a UNIX time stamp in seconds or an ISO 8601 string.
+          If not specified, the maximum amount of data for the requested average will be returned up to
+          the provided end_timestamp. The time_stamp column of data in the response's JSON or CSV will
+          use the same format and/or time zone used in the start_timestamp.
+        schema:
+          type: integer
+      - name: end_timestamp
+        in: query
+        description: The end time stamp of the history to return. Query is executed using data_time_stamp
+          < end_timestamp. This can be specified as a UNIX time stamp in seconds or an ISO 8601 string.
+          If not specified, the maximum amount of data for the requested average will be returned starting
+          from the provided start_timestamp.
+        schema:
+          type: integer
+      - name: average
+        in: query
+        description: 'The desired average in minutes. The amount of data that can be returned in a single
+          response depends on the average used in the request. Valid values are as follows: Average Maximum
+          Data Returnable per Request 0 (Real-time) 30 days 10 (10-minute) 60 days 30 (30-minute) 90 days
+          60 (1-hour) 180 days 360 (6-hour) 1 year 1440 (1-day) 2 years 10080 (1-week) 5 years 43200 (1-month)
+          20 years 525600 (1-year) 100 years'
+        schema:
+          type: integer
+      - name: fields
+        in: query
+        description: 'The ''Fields'' parameter specifies which ''sensor data fields'' to include in the
+          response. It accepts a comma-separated list of field names, optionally with per-field formatting
+          options. For descriptions of individual fields, please see the ''sensor data fields'' section.
+          Note: Not all fields are available as history fields and we will be working to add more as time
+          goes on. Fields marked with an asterisk (*) may not be available when using averages. Station
+          information and status fields: hardware*, latitude*, longitude*, altitude*, firmware_version*,
+          private, rssi, uptime, pa_latency, memory Environmental fields: humidity, humidity_a, humidity_b,
+          temperature, temperature_a, temperature_b, pressure, pressure_a, pressure_b Miscellaneous fields:
+          voc, voc_a, voc_b, analog_input PM1.0 fields: pm1.0_atm, pm1.0_atm_a, pm1.0_atm_b, pm1.0_cf_1,
+          pm1.0_cf_1_a, pm1.0_cf_1_b PM2.5 fields: pm2.5_alt, pm2.5_alt_a, pm2.5_alt_b, pm2.5_atm, pm2.5_atm_a,
+          pm2.5_atm_b, pm2.5_cf_1, pm2.5_cf_1_a, pm2.5_cf_1_b PM10.0 fields: pm10.0_atm, pm10.0_atm_a,
+          pm10.0_atm_b, pm10.0_cf_1, pm10.0_cf_1_a, pm10.0_cf_1_b Visibility fields: scattering_coefficient,
+          scattering_coefficient_a, scattering_coefficient_b, deciviews, deciviews_a, deciviews_b, visual_range,
+          visual_range_a, visual_range_b Particle count fields: 0.3_um_count, 0.3_um_count_a, 0.3_um_count_b,
+          0.5_um_count, 0.5_um_count_a, 0.5_um_count_b, 1.0_um_count, 1.0_um_count_a, 1.0_um_count_b,
+          2.5_um_count, 2.5_um_count_a, 2.5_um_count_b, 5.0_um_count, 5.0_um_count_a, 5.0_um_count_b,
+          10.0_um_count, 10.0_um_count_a, 10.0_um_count_b Configurable Decimal Places You can control
+          how many decimal places are returned for each numeric field by using the syntax: fieldname|dN,
+          where N is the maximum number of decimal places to include. For example, if pm2.5_atm_a is recorded
+          as 3.23: Requested Field Returned Value pm2.5_atm_a|d0 3 pm2.5_atm_a|d1 3.2 pm2.5_atm_a|d2 3.23
+          pm2.5_atm_a|d3 3.23 Note: No trailing zeros are added if the requested number of decimal places
+          exceeds those present in the stored value. Requesting pm2.5_atm_a|d3 in the table above returns
+          3.23 rather than 3.230, because 3.23 is the actual value stored in the database. As decimal
+          places are configurable per field, varying precision levels can be applied to different fields
+          in the same request: fields=temperature|d1,pm2.5_atm_a|d2,pm2.5_atm_b|d0'
+        schema:
+          type: string
+        required: true
+      responses:
+        '200':
+          description: Success 200
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sensor_index:
+                    type: integer
+                    description: The sensor_index used in the API request.
+                  start_timestamp:
+                    type: integer
+                    description: The UNIX time stamp used in the API request.
+                  end_timestamp:
+                    type: integer
+                    description: The UNIX time stamp used in the API request.
+                  average:
+                    type: integer
+                    description: The average parameter used in the API request.
+                  fields:
+                    type: string
+                    description: An array of values representing the headers for the "data" object and
+                      describes the meanings of the columns in the data object. For example, fields[column]
+                      is the header for data[row][column]. You should always identify the data column
+                      index by looking for the desired header in the fields array since the column order
+                      is not guaranteed to always stay the same.
+                  data:
+                    type: object
+                    description: An array of comma separated values, described by the fields array. Always
+                      use the item index from the desired fields value to lookup the correct data column
+                      since the order may change as columns are included or excluded.
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /sensors/{sensor_index}/history/csv:
+    get:
+      operationId: get-sensor-history-csv
+      summary: Get Sensor History (CSV)
+      description: Behaves the same as Get Sensor History but provides data in CSV format rather than
+        JSON. Has a default rate limit of 1000ms (1 second).
+      tags:
+      - sensors
+      parameters:
+      - name: sensor_index
+        in: path
+        required: true
+        description: The sensor_index as found in the JSON for this specific sensor.
+        schema:
+          type: integer
+      - name: read_key
+        in: query
+        description: 'This read_key is required for private devices. It is separate to the api_key and
+          each sensor has its own read_key. Submit multiple keys by separating them with a comma (,) character
+          for example: key-one,key-two,key-three.'
+        schema:
+          type: string
+      - name: privacy
+        in: query
+        description: The privacy of returned data. Sensors can record data while registered as public
+          or private. Obtaining private data requires the sensor's read_key be provided. auto (default
+          if not specified) returns data with privacy matching the sensor's current registration. both
+          returns all data regardless of privacy and adds the private field to the returned data columns.
+        schema:
+          type: string
+      - name: start_timestamp
+        in: query
+        description: The time stamp of the first required history entry. Query is executed using data_time_stamp
+          >= start_timestamp. This can be specified as a UNIX time stamp in seconds or an ISO 8601 string.
+          If not specified, the maximum amount of data for the requested average will be returned up to
+          the provided end_timestamp. The time_stamp column of data in the response's JSON or CSV will
+          use the same format and/or time zone used in the start_timestamp.
+        schema:
+          type: integer
+      - name: end_timestamp
+        in: query
+        description: The end time stamp of the history to return. Query is executed using data_time_stamp
+          < end_timestamp. This can be specified as a UNIX time stamp in seconds or an ISO 8601 string.
+          If not specified, the maximum amount of data for the requested average will be returned starting
+          from the provided start_timestamp.
+        schema:
+          type: integer
+      - name: average
+        in: query
+        description: 'The desired average in minutes. The amount of data that can be returned in a single
+          response depends on the average used in the request. Valid values are as follows: Average Maximum
+          Data Returnable per Request 0 (Real-time) 30 days 10 (10-minute) 60 days 30 (30-minute) 90 days
+          60 (1-hour) 180 days 360 (6-hour) 1 year 1440 (1-day) 2 years 10080 (1-week) 5 years 43200 (1-month)
+          20 years 525600 (1-year) 100 years'
+        schema:
+          type: integer
+      - name: fields
+        in: query
+        description: 'The ''Fields'' parameter specifies which ''sensor data fields'' to include in the
+          response. It accepts a comma-separated list of field names, optionally with per-field formatting
+          options. For descriptions of individual fields, please see the ''sensor data fields'' section.
+          Note: Not all fields are available as history fields and we will be working to add more as time
+          goes on. Fields marked with an asterisk (*) may not be available when using averages. Station
+          information and status fields: hardware*, latitude*, longitude*, altitude*, firmware_version*,
+          private, rssi, uptime, pa_latency, memory Environmental fields: humidity, humidity_a, humidity_b,
+          temperature, temperature_a, temperature_b, pressure, pressure_a, pressure_b Miscellaneous fields:
+          voc, voc_a, voc_b, analog_input PM1.0 fields: pm1.0_atm, pm1.0_atm_a, pm1.0_atm_b, pm1.0_cf_1,
+          pm1.0_cf_1_a, pm1.0_cf_1_b PM2.5 fields: pm2.5_alt, pm2.5_alt_a, pm2.5_alt_b, pm2.5_atm, pm2.5_atm_a,
+          pm2.5_atm_b, pm2.5_cf_1, pm2.5_cf_1_a, pm2.5_cf_1_b PM10.0 fields: pm10.0_atm, pm10.0_atm_a,
+          pm10.0_atm_b, pm10.0_cf_1, pm10.0_cf_1_a, pm10.0_cf_1_b Visibility fields: scattering_coefficient,
+          scattering_coefficient_a, scattering_coefficient_b, deciviews, deciviews_a, deciviews_b, visual_range,
+          visual_range_a, visual_range_b Particle count fields: 0.3_um_count, 0.3_um_count_a, 0.3_um_count_b,
+          0.5_um_count, 0.5_um_count_a, 0.5_um_count_b, 1.0_um_count, 1.0_um_count_a, 1.0_um_count_b,
+          2.5_um_count, 2.5_um_count_a, 2.5_um_count_b, 5.0_um_count, 5.0_um_count_a, 5.0_um_count_b,
+          10.0_um_count, 10.0_um_count_a, 10.0_um_count_b Configurable Decimal Places You can control
+          how many decimal places are returned for each numeric field by using the syntax: fieldname|dN,
+          where N is the maximum number of decimal places to include. For example, if pm2.5_atm_a is recorded
+          as 3.23: Requested Field Returned Value pm2.5_atm_a|d0 3 pm2.5_atm_a|d1 3.2 pm2.5_atm_a|d2 3.23
+          pm2.5_atm_a|d3 3.23 Note: No trailing zeros are added if the requested number of decimal places
+          exceeds those present in the stored value. Requesting pm2.5_atm_a|d3 in the table above returns
+          3.23 rather than 3.230, because 3.23 is the actual value stored in the database. As decimal
+          places are configurable per field, varying precision levels can be applied to different fields
+          in the same request: fields=temperature|d1,pm2.5_atm_a|d2,pm2.5_atm_b|d0'
+        schema:
+          type: string
+        required: true
+      responses:
+        '200':
+          description: Success 200
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  headers:
+                    type: string
+                    description: An array of values representing the headers for the CSV data and describes
+                      the meanings of the columns. The headers will include a column called sensor_index
+                      for calls to GetSensorHistory or group_id and member_id for calls to GetMemberHistory.
+                  data:
+                    type: string
+                    description: An array of comma separated values, described by the headers array. The
+                      data will include the sensor_index used in calls to GetSensorHistory or the group_id
+                      and member_id used in calls to GetMemberHistory. Please see "Get Sensor History"
+                      section for a list of data fields and their meanings.
+        4XX:
+          description: Error response with a PurpleAir error code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          enum:
+          - DuplicateGroupEntryError
+          - GroupContainsMembersError
+          - GroupNotFoundError
+          - InvalidAverageError
+          - InvalidBoundingBoxError
+          - InvalidCfError
+          - InvalidDataReadKeyError
+          - InvalidFieldValueError
+          - InvalidLocationTypeError
+          - InvalidMaxAgeError
+          - InvalidModifiedSinceError
+          - InvalidParameterLengthError
+          - InvalidParameterValueError
+          - InvalidShowValueError
+          - InvalidTimestampError
+          - InvalidTimestampSpanError
+          - MissingFieldsParameterError
+          - MissingIdentifierError
+          - MissingNameValueError
+          - MissingRequiredParameterError
+          - NotFoundError
+          - NothingDeletedError
+        description:
+          type: string
+    SensorDataFields:
+      type: object
+      description: Catalog of PurpleAir sensor data fields (the `fields` query parameter values).
+      properties:
+        0.3_um_count:
+          type: string
+          description: 'Count concentration (particles/deciliter) of all particles greater than or equal
+            to 0.3 µm in diameter. Variations: 0.3_um_count returns average particle count for channel
+            A and B but excluding downgraded channels. 0.3_um_count_a returns channel A particle count.
+            0.3_um_count_b returns channel B particle count.'
+        0.5_um_count:
+          type: string
+          description: 'Count concentration (particles/deciliter) of all particles greater than or equal
+            to 0.5 µm in diameter. Variations: 0.5_um_count returns average particle count for channel
+            A and B but excluding downgraded channels. 0.5_um_count_a returns channel A particle count.
+            0.5_um_count_b returns channel B particle count.'
+        1.0_um_count:
+          type: string
+          description: 'Count concentration (particles/deciliter) of all particles greater than or equal
+            to 1.0 µm in diameter. Variations: 1.0_um_count returns average particle count for channel
+            A and B but excluding downgraded channels. 1.0_um_count_a returns channel A particle count.
+            1.0_um_count_b returns channel B particle count.'
+        10.0_um_count:
+          type: string
+          description: 'Count concentration (particles/deciliter) of all particles greater than or equal
+            to 10.0 µm in diameter. Variations: 10.0_um_count returns average particle count for channel
+            A and B but excluding downgraded channels. 10.0_um_count_a returns channel A particle count.
+            10.0_um_count_b returns channel B particle count.'
+        2.5_um_count:
+          type: string
+          description: 'Count concentration (particles/deciliter) of all particles greater than or equal
+            to 2.5 µm in diameter. Variations: 2.5_um_count returns average particle count for channel
+            A and B but excluding downgraded channels. 2.5_um_count_a returns channel A particle count.
+            2.5_um_count_b returns channel B particle count.'
+        5.0_um_count:
+          type: string
+          description: 'Count concentration (particles/deciliter) of all particles greater than or equal
+            to 5.0 µm in diameter. Variations: 5.0_um_count returns average particle count for channel
+            A and B but excluding downgraded channels. 5.0_um_count_a returns channel A particle count.
+            5.0_um_count_b returns channel B particle count.'
+        altitude:
+          type: string
+          description: The altitude for the sensor's location in feet.
+        analog_input:
+          type: string
+          description: If anything is connected to it, the analog voltage on ADC input of the PurpleAir
+            sensor control board.
+        channel_state:
+          type: string
+          description: Flags indicating the state of the channels. For possible values, see channel_states.
+        confidence:
+          type: string
+          description: The average of confidence_manual and confidence_auto. A value between 0 and 100
+            (%). Using confidence is recommended over confidence_manual or confidence_auto.
+        confidence_auto:
+          type: string
+          description: A value between 0 and 100 (%), indicating how closely channel A and B pseudo averages
+            match each other. Takes downgrades from channel_flags_auto into account.
+        confidence_manual:
+          type: string
+          description: A value between 0 and 100 (%), indicating how closely channel A and B pseudo averages
+            match each other. Takes downgrades from channel_flags_manual into account.
+        date_created:
+          type: string
+          description: The UNIX time stamp from when the device was created.
+        deciviews:
+          type: string
+          description: 'A haze index related to light scattering and extinction that is approximately
+            linearly related to human perception of the haze. See, http://vista.cira.colostate.edu/Improve/visibility-basics/.
+            Variations: deciviews returns average for channel A and B. deciviews_a returns channel A data.
+            deciviews_b returns channel B data.'
+        firmware_upgrade:
+          type: string
+          description: If an update is available, the firmware version that will be installed on the device.
+        firmware_version:
+          type: string
+          description: The last known firmware version on the device.
+        hardware:
+          type: string
+          description: Sensors and hardware detectable by the device's firmware.
+        humidity:
+          type: string
+          description: 'Relative humidity inside of the sensor housing (%). Null if not equipped. Variations:
+            humidity returns average for channel A and B. humidity_a returns channel A data. humidity_b
+            returns channel B data. This matches the "Operating Relative Humidity" map layer and is not
+            representative of ambient conditions. Formulas can be applied to estimate ambient relative
+            humidity, with more information available here.'
+        icon:
+          type: string
+          description: A flag reserved for future use to reference an icon for the sensor.
+        last_modified:
+          type: string
+          description: The UNIX time stamp from the last time the device was modified by the registration
+            form.
+        last_seen:
+          type: string
+          description: The UNIX time stamp of the last time the server received data from the device.
+        latitude:
+          type: string
+          description: The latitude position value for the sensor.
+        led_brightness:
+          type: string
+          description: The brightness of the on board, full color LED(s) where installed.
+        location_type:
+          type: string
+          description: 'The location type. Possible values are: 0 = Outside or 1 = Inside.'
+        longitude:
+          type: string
+          description: The longitude position value for the sensor.
+        memory:
+          type: string
+          description: Free HEAP memory in Kb.
+        model:
+          type: string
+          description: The PurpleAir device model.
+        name:
+          type: string
+          description: The name given to the sensor from the registration form and used on the PA map.
+        ozone1:
+          type: string
+          description: Ozone concentration (PPB) Null if not equipped. Only around 12 PurpleAir sensors
+            have ever reported this field. Further information is found here.
+        pa_latency:
+          type: string
+          description: The time taken to send data to the PurpleAir servers in milliseconds.
+        pm1.0:
+          type: string
+          description: 'Estimated mass concentration PM1 (µg/m³). PM1 are extremely fine particulates
+            with a diameter of fewer than 1 microns. Note that automatically omitting downgraded channels
+            for averaged fields and automatically selecting atm or cf_1 are currently only available on
+            real-time endpoints. The differences between atm, cf_1, and alt are found in the PurpleAir
+            Community here. Variations: pm1.0 returns the average of pm1.0_a and pm1.0_b, but excludes
+            downgraded channels. pm1.0_a returns channel A. Equivalent to pm1.0_cf_1_a for sensors registered
+            as indoor, and pm1.0_atm_a for sensors registered as outdoor. pm1.0_b returns channel B. Equivalent
+            to pm1.0_cf_1_b for sensors registered as indoor, and pm1.0_atm_b for sensors registered as
+            outdoor. pm1.0_atm returns the average of pm1.0_atm_a and pm1.0_atm_b, but excludes downgraded
+            channels. pm1.0_atm_a returns channel A ATM variant. pm1.0_atm_b returns channel B ATM variant.
+            pm1.0_cf_1 returns the average of pm1.0_cf_1_a and pm1.0_cf_1_b, but excludes downgraded channels.
+            pm1.0_cf_1_a returns channel A CF=1 variant. pm1.0_cf_1_b returns channel B CF=1 variant.'
+        pm10.0:
+          type: string
+          description: 'Estimated mass concentration PM10 (µg/m³). PM10 are coarse particulates with a
+            diameter of fewer than 10 microns. Note that automatically omitting downgraded channels for
+            averaged fields and automatically selecting atm or cf_1 are currently only available on real-time
+            endpoints. The differences between atm, cf_1, and alt are found in the PurpleAir Community
+            here. Variations: pm10.0 returns the average of pm10.0_a and pm10.0_b, but excludes downgraded
+            channels. pm10.0_a returns channel A. Equivalent to pm10.0_cf_1_a for sensors registered as
+            indoor, and pm10.0_atm_a for sensors registered as outdoor. pm10.0_b returns channel B. Equivalent
+            to pm10.0_cf_1_b for sensors registered as indoor, and pm10.0_atm_b for sensors registered
+            as outdoor. pm10.0_atm returns the average of pm10.0_atm_a and pm10.0_atm_b, but excludes
+            downgraded channels. pm10.0_atm_a returns channel A ATM variant. pm10.0_atm_b returns channel
+            B ATM variant. pm10.0_cf_1 returns the average of pm10.0_cf_1_a and pm10.0_cf_1_b, but excludes
+            downgraded channels. pm10.0_cf_1_a returns channel A CF=1 variant. pm10.0_cf_1_b returns channel
+            B CF=1 variant.'
+        pm2.5:
+          type: string
+          description: 'Estimated mass concentration PM2.5 (µg/m³). PM2.5 are fine particulates with a
+            diameter of fewer than 2.5 microns. Note that automatically omitting downgraded channels for
+            averaged fields and automatically selecting atm or cf_1 are currently only available on real-time
+            endpoints. The differences between atm, cf_1, and alt are found in the PurpleAir Community
+            here. Variations: pm2.5 returns the average of pm2.5_a and pm2.5_b, but excludes downgraded
+            channels. pm2.5_a returns channel A. Equivalent to pm2.5_cf_1_a for sensors registered as
+            indoor, and pm2.5_atm_a for sensors registered as outdoor. pm2.5_b returns channel B. Equivalent
+            to pm2.5_cf_1_b for sensors registered as indoor, and pm2.5_atm_b for sensors registered as
+            outdoor. pm2.5_atm returns the average of pm2.5_atm_a and pm2.5_atm_b, but excludes downgraded
+            channels. pm2.5_atm_a returns channel A ATM variant. pm2.5_atm_b returns channel B ATM variant.
+            pm2.5_cf_1 returns the average of pm2.5_cf_1_a and pm2.5_cf_1_b, but excludes downgraded channels.
+            pm2.5_cf_1_a returns channel A CF=1 variant. pm2.5_cf_1_b returns channel B CF=1 variant.'
+        pm2.5_10minute:
+          type: string
+          description: '10 minute pseudo (simple running) average for PM2.5. Simple running averages are
+            calculated using CF=1 data variant for indoor and ATM variant for outdoor as sensors upload
+            data. Variations: pm2.5_10minute returns average for channel A and B but excluding downgraded
+            channels. pm2.5_10minute_a returns channel A running average. pm2.5_10minute_b returns channel
+            B running average.'
+        pm2.5_1week:
+          type: string
+          description: '1 week pseudo (simple running) average for PM2.5 Simple running averages are calculated
+            using CF=1 data variant for indoor and ATM variant for outdoor as sensors upload data. Variations:
+            pm2.5_1week returns average for channel A and B but excluding downgraded channels. pm2.5_1week_a
+            returns channel A running average. pm2.5_1week_b returns channel B running average.'
+        pm2.5_24hour:
+          type: string
+          description: '24 hour pseudo (simple running) average for PM2.5 Simple running averages are
+            calculated using CF=1 data variant for indoor and ATM variant for outdoor as sensors upload
+            data. Variations: pm2.5_24hour returns average for channel A and B but excluding downgraded
+            channels. pm2.5_24hour_a returns channel A running average. pm2.5_24hour_b returns channel
+            B running average.'
+        pm2.5_30minute:
+          type: string
+          description: '30 minute pseudo (simple running) average for PM2.5 Simple running averages are
+            calculated using CF=1 data variant for indoor and ATM variant for outdoor as sensors upload
+            data. Variations: pm2.5_30minute returns average for channel A and B but excluding downgraded
+            channels. pm2.5_30minute_a returns channel A running average. pm2.5_30minute_b returns channel
+            B running average.'
+        pm2.5_60minute:
+          type: string
+          description: '60 minute pseudo (simple running) average for PM2.5 Simple running averages are
+            calculated using CF=1 data variant for indoor and ATM variant for outdoor as sensors upload
+            data. Variations: pm2.5_60minute returns average for channel A and B but excluding downgraded
+            channels. pm2.5_60minute_a returns channel A running average. pm2.5_60minute_b returns channel
+            B running average.'
+        pm2.5_6hour:
+          type: string
+          description: '6 Hour pseudo (simple running) average for PM2.5 Simple running averages are calculated
+            using CF=1 data variant for indoor and ATM variant for outdoor as sensors upload data. Variations:
+            pm2.5_6hour returns average for channel A and B but excluding downgraded channels. pm2.5_6hour_a
+            returns channel A running average. pm2.5_6hour_b returns channel B running average.'
+        pm2.5_alt:
+          type: string
+          description: 'The ALT Variant estimated mass concentration PM2.5 (µg/m³) is derived from the
+            particle counts. PM2.5 are fine particulates with a diameter of fewer than 2.5 microns. pm2.5_alt
+            returns average ALT variant for channel A and B but excluding downgraded channels. pm2.5_alt_a
+            returns channel A ALT variant. pm2.5_alt_b returns channel B ALT variant. The following method
+            is used to calculate the ALT variant: Step 1: Calculate the number N of particles (per deciliter)
+            in each of the size categories 0.3-0.5 um, 0.5-1 um, and 1-2.5 um. Note: since the Plantower
+            output provides the total number of particles >0.3 um, the total number >0.5 um, etc., one
+            must subtract the total number >0.5 um from the total number > 0.3 um to arrive at the number
+            of particles in the 0.3-0.5 um size category. Similar subtractions will result in three size
+            categories under 10 um: 0.3-0.5 um, 0.5-1 um, 1-2.5 um. Step 2: Select an average diameter
+            D for each of the three size categories up to 2.5 um. For example, the average particle diameter
+            D in the 0.3-0.5 um size category category must be between 0.3 and 0.5 um, so we can approximate
+            it by the midpoint (0.4 um) or by the geometric mean of the size boundaries (0.387 um). Several
+            manufacturers use the geometric mean so we use it throughout this work. Step 3: Calculate
+            the total particle volume V in each size category. This is given by multiplying the number
+            of particles N times the volume per particle: V = N πD 3 / 6 Step 4: Multiply by a density
+            ρ to arrive at an estimate of the mass concentration M in each size category. We choose ρ
+            to be the density of water, a choice that is also made by the Model 3330 manufacturers: M
+            = ρV Step 5: Add the three mass concentrations to estimate PM2.5. Step 6: Multiply by a calibration
+            factor (CF) based on comparisons with nearby or collocated reference monitors. Based on comparisons
+            of two PurpleAir monitors with collocated reference monitors (e.g., the SidePak and Piezobalance)
+            in 124 experiments since January 2019, a CF of 3 is recommended. const cf_3 = 3.0; function
+            pm2_5_alt(p0_3, p0_5, p1_0, p2_5, cf) { var _cf = parseFloat(cf); if (isNaN(_cf)) _cf = cf_3;
+            var m1 = getMass(p0_3 - p0_5, 0.3, 0.5); var m2 = getMass(p0_5 - p1_0, 0.5, 1.0); var m3 =
+            getMass(p1_0 - p2_5, 1.0, 2.5); var pm2_5 = m1 + m2 + m3; return pm2_5 * _cf; } function getMass(countDl,
+            sizeLower, sizeUpper) { var densityGCm3 = 1.0; var geometricMeanUm = Math.sqrt(sizeLower *
+            sizeUpper); var volume = countDl * Math.PI * Math.pow(geometricMeanUm, 3) / 6.0; return volume
+            * densityGCm3 / 100.0; }'
+        position_rating:
+          type: string
+          description: A 'star' rating of position accuracy. 0 stars is nowhere near the claimed location
+            whereas 5 stars is close to the map location as indicated by the latitude and longitude values.
+        pressure:
+          type: string
+          description: 'Current pressure in Millibars. Variations: pressure returns average for channel
+            A and B. pressure_a returns channel A data. pressure_b returns channel B data.'
+        primary_id_a:
+          type: string
+          description: ThingSpeak channel ID for storing sensor values
+        primary_id_b:
+          type: string
+          description: ThingSpeak channel ID for storing sensor values
+        primary_key_a:
+          type: string
+          description: ThingSpeak read key used for accessing data for the channel
+        primary_key_b:
+          type: string
+          description: ThingSpeak read key used for accessing data for the channel
+        private:
+          type: string
+          description: 'Whether the sensor is currently registered as private. Possible values are: 0
+            = Public or 1 = Private.'
+        rssi:
+          type: string
+          description: The WiFi signal strength.
+        scattering_coefficient:
+          type: string
+          description: 'Fine Particulate Light Scattering: The interaction of light with fine particulate
+            matter causing the light to be redirected from its path. When looking at a scene, haze is
+            partially due to light emanating from the scenic elements being scattered out of the sight
+            path and random light (air light) being scattering into the sight path. See, http://vista.cira.colostate.edu/Improve/visibility-basics/.
+            Variations: scattering_coefficient returns average for channel A and B. scattering_coefficient_a
+            returns channel A data. scattering_coefficient_b returns channel B data.'
+        secondary_id_a:
+          type: string
+          description: ThingSpeak channel ID for storing sensor values
+        secondary_id_b:
+          type: string
+          description: ThingSpeak channel ID for storing sensor values
+        secondary_key_a:
+          type: string
+          description: ThingSpeak read key used for accessing data for the channel
+        secondary_key_b:
+          type: string
+          description: ThingSpeak read key used for accessing data for the channel
+        sensor_index:
+          type: string
+          description: The sensor's index. Can be used to add a sensor to a group or view its details.
+        stats:
+          type: string
+          description: Pseudo average statistics for the channel as an average of channel A and channel
+            B excluding downgraded channels (see Sensor data stats object below).
+        stats_a:
+          type: string
+          description: Pseudo average statistics for the channel (see Sensor data stats object below).
+        stats_b:
+          type: string
+          description: Pseudo average statistics for the channel (see Sensor data stats object below).
+        temperature:
+          type: string
+          description: 'Temperature inside of the sensor housing (F). Null if not equipped. Variations:
+            temperature returns average for channel A and B. temperature_a returns channel A data. temperature_b
+            returns channel B data. This matches the "Operating Temperature" map layer and is not representative
+            of ambient conditions. Formulas can be applied to estimate ambient temperature, with more
+            information available here.'
+        uptime:
+          type: string
+          description: The time in minutes since the firmware started as last reported by the sensor.
+        visual_range:
+          type: string
+          description: 'Often referred to as visibility, visual range is the distance from the observer
+            that a large dark object, e.g. a mountain top or large building, just disappears from view.
+            See, http://vista.cira.colostate.edu/Improve/visibility-basics/. Variations: visual_range
+            returns average for channel A and B. visual_range_a returns channel A data. visual_range_b
+            returns channel B data.'
+        voc:
+          type: string
+          description: 'VOC concentration (IAQ) in Bosch static iaq units as per BME680 spec sheet, EXPERIMENTAL.
+            Null if not equipped. Variations: voc returns average for channel A and B. voc_a returns channel
+            A data. voc_b returns channel B data.'

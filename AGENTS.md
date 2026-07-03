@@ -67,6 +67,18 @@ The version is derived by [Nerdbank.GitVersioning][nbgv] (NBGV) from [version.js
 - Bump `version.json`'s base `version` field manually only when opening a new CalVer series. NBGV handles the height component automatically. **Never create manual tags** - the release pipeline creates the tag.
 - [`src/aiopurpleair/_version.py`](src/aiopurpleair/_version.py) carries a placeholder `__version__` (the single source hatchling reads). Do not hand-edit it to a real version. [`build-release-task.yml`](.github/workflows/build-release-task.yml) `sed`s the NBGV-computed PEP 440 version into it on the runner before `uv build`, so the published wheel carries the real version while git stays clean. On `develop` the build appends `.dev0` so `pip install --pre` prefers the dev build over the main release.
 
+## PurpleAir API Reference and Coverage
+
+PurpleAir does not publish an OpenAPI/Swagger spec; its docs at <https://api.purpleair.com/> are generated with [apiDoc](https://apidocjs.com/), which serves machine-readable data at `/api_data.js` and `/api_project.js`. [`docs/purpleair-openapi.yaml`](docs/purpleair-openapi.yaml) is reconstructed from that data by [`scripts/generate_openapi.py`](scripts/generate_openapi.py) and is the source of truth for the API surface this library targets. **Don't hand-edit the spec - it is generated.**
+
+- **Regenerate** whenever the upstream API may have changed: `uv run --with pyyaml --with openapi-spec-validator python scripts/generate_openapi.py` (live fetch; writes and validates `docs/purpleair-openapi.yaml`). Pass `--data`/`--project` to run offline from cached `api_data.js`/`api_project.js`. Commit the regenerated spec; a non-empty diff means the upstream API changed and the library's coverage or models may need updating.
+- **Version comes from the changelog, not the metadata.** apiDoc's build version (`api_project.js` `version`) lags the real REST API version, which is published only as a changelog in the `welcome` doc-block. The script takes the real version as the highest semver in that changelog and records the build version in the spec description. Trust the changelog version.
+- **Validate the code against the spec** when adding or changing an endpoint, response model, sensor field, or error class:
+  - Endpoints in [`api.py`](src/aiopurpleair/api.py) / [`endpoints/`](src/aiopurpleair/endpoints/) must map to a spec `paths` entry (path + method). An endpoint the spec lacks is API drift - regenerate first, don't invent it.
+  - `SENSOR_FIELDS` in [`const.py`](src/aiopurpleair/const.py) and the [`models/`](src/aiopurpleair/models/) response fields must stay a subset of the spec's `components.schemas.SensorDataFields`. An orphan field (in the code, not the spec) means the spec is stale (regenerate) or the field is wrong.
+  - The exception classes and `ERROR_CODE_MAP` in [`errors.py`](src/aiopurpleair/errors.py) should track the spec's `components.schemas.Error` `error` enum.
+- **Known coverage gaps** (against `2026.8`): the Groups API (`/groups*`) and sensor history (`/sensors/{sensor_index}/history[/csv]`) are not yet implemented; keys, organization, and current sensor data are complete. Closing a gap means a new endpoint + models + tests, validated against the spec path it fills.
+
 ## PR Review Etiquette
 
 > **Mandatory contract.** This entire "PR Review Etiquette" section is the provider-agnostic review-loop *contract*, carried alongside the [`.github/copilot-instructions.md`](./.github/copilot-instructions.md) "GitHub Copilot Review Runbook" that implements it. Without both in-repo, an agent has no pointer to the reliable Copilot mechanics and falls back to ad-hoc (and known-broken) behavior.
