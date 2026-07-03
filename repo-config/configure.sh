@@ -58,10 +58,43 @@ apply_ruleset() {
   fi
 }
 
+apply_environment() {
+  # Create-or-update a deployment environment and reconcile its branch policy to exactly the desired set.
+  # This is the GitHub half of the PyPI publish gate: a job can only mint an OIDC token through this
+  # environment, and only the listed branches may deploy to it. (PyPI's Trusted Publisher pins the matching
+  # `environment` claim; that side is configured on PyPI and cannot be managed here.)
+  local file="$1" env
+  env="$(jq -r .environment "$file")"
+  # PUT sets custom_branch_policies:true (creates the env if absent). With it true, GitHub gates deployments
+  # on the branch-policy list we reconcile below; no reviewers/wait timer are set, so auto-publish is not blocked.
+  jq '{deployment_branch_policy}' "$file" | gh api -X PUT "repos/$REPO/environments/$env" --input - >/dev/null
+  note "configured environment '$env'"
+  local want have name id
+  want="$(jq -r '.branches[]' "$file" | sort)"
+  have="$(gh api --paginate "repos/$REPO/environments/$env/deployment-branch-policies" --jq '.branch_policies[].name' 2>/dev/null | sort || true)"
+  while read -r name; do
+    [[ -z "$name" ]] && continue
+    if ! grep -qx "$name" <<<"$have"; then
+      gh api -X POST "repos/$REPO/environments/$env/deployment-branch-policies" -f name="$name" -f type=branch >/dev/null
+      note "added deployment branch '$name' to '$env'"
+    fi
+  done <<<"$want"
+  # Remove any branch policy not in the desired set, so `apply` converges (drops stray branches).
+  gh api --paginate "repos/$REPO/environments/$env/deployment-branch-policies" \
+    --jq '.branch_policies[] | "\(.id)\t\(.name)"' 2>/dev/null | while IFS=$'\t' read -r id name; do
+    [[ -z "$name" ]] && continue
+    if ! grep -qx "$name" <<<"$want"; then
+      gh api -X DELETE "repos/$REPO/environments/$env/deployment-branch-policies/$id" >/dev/null
+      note "removed stray deployment branch '$name' from '$env'"
+    fi
+  done
+}
+
 cmd_apply() {
   echo "Applying repository configuration to $REPO"
   apply_ruleset "$DIR/ruleset-develop.json"
   apply_ruleset "$DIR/ruleset-main.json"
+  apply_environment "$DIR/environment-pypi.json"
   gh api -X PATCH "repos/$REPO" --input "$DIR/settings.json" >/dev/null
   note "patched repository settings"
   gh api -X PUT "repos/$REPO/vulnerability-alerts" >/dev/null
@@ -162,6 +195,25 @@ check_secrets() {
   done
 }
 
+check_environment() { # file
+  # Validate the deployment environment matches the desired state: custom branch policy on (not the
+  # "protected branches" preset), and the allowed-branch set equal to the file's list. This is what stops a
+  # publish from any branch other than the listed release branches.
+  local file="$1" env env_json want have
+  env="$(jq -r .environment "$file")"
+  if ! env_json="$(gh api "repos/$REPO/environments/$env" 2>/dev/null)"; then
+    fail "environment '$env' missing"; return
+  fi
+  assert "environment '$env' uses a custom branch policy" \
+    test "$(jq -r '.deployment_branch_policy.custom_branch_policies' <<<"$env_json")" = true
+  assert "environment '$env' not in protected-branches mode" \
+    test "$(jq -r '.deployment_branch_policy.protected_branches' <<<"$env_json")" = false
+  want="$(jq -r '.branches[]' "$file" | sort)"
+  have="$(gh api --paginate "repos/$REPO/environments/$env/deployment-branch-policies" --jq '.branch_policies[].name' 2>/dev/null | sort || true)"
+  assert "environment '$env' allowed branches = $(tr '\n' ',' <<<"$want" | sed 's/,$//')" \
+    test "$have" = "$want"
+}
+
 check_app() {
   # Best-effort: confirm a GitHub App installation backs the merge automation. A precise check requires
   # app-level auth; presence of the App secrets above is the practical proxy.
@@ -176,11 +228,12 @@ cmd_check() {
   echo "Validating repository configuration for $REPO"
   check_ruleset develop squash true
   check_ruleset main   merge  false
+  check_environment "$DIR/environment-pypi.json"
   check_settings
   check_security
   check_secrets
   check_app
-  note "verify manually: PyPI publishing uses OIDC Trusted Publishing (no stored API key) - confirm the pending publisher on PyPI, and the 'pypi' deployment environment, are configured."
+  note "verify manually on PyPI: the Trusted Publisher for the project is present and constrained to the 'pypi' environment (the PyPI side of the OIDC gate cannot be checked via the GitHub API)."
   if [[ "$FAILED" -ne 0 ]]; then echo "Configuration drift detected."; exit 1; fi
   echo "Configuration matches."
 }

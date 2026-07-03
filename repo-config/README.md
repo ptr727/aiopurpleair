@@ -13,12 +13,18 @@ templates); repository administration config-as-code is the maintainer's, so it 
   - `./repo-config/configure.sh check` - validate only, no writes; exits non-zero on drift (the 5D
     audit). Read-only, but it reads the rulesets and secrets endpoints, so it still needs a `gh` token
     with admin on the repo.
-  - `./repo-config/configure.sh apply` - create-or-update the rulesets and settings to match this
-    directory (needs admin; writes).
+  - `./repo-config/configure.sh apply` - create-or-update the rulesets, the `pypi` environment, and
+    settings to match this directory (needs admin; writes).
 - [`ruleset-develop.json`](./ruleset-develop.json) - the `develop` branch ruleset (squash-only, linear
   history, signed commits, the required status check, strict-status **off**).
 - [`ruleset-main.json`](./ruleset-main.json) - the `main` branch ruleset (merge-commit-only, signed
   commits, the same required check, strict **off**; no linear-history rule).
+- [`environment-pypi.json`](./environment-pypi.json) - the `pypi` deployment environment: a **custom branch
+  policy** allowing only `develop` and `main` to deploy to it. This is the GitHub half of the PyPI publish
+  gate - only a job running *through* this environment can mint the OIDC token, and only these branches may
+  enter it. `apply` reconciles the allowed-branch set exactly (adds missing, removes stray); `check` fails on
+  any difference. The PyPI-side Trusted Publisher pins the matching `environment: pypi` claim and is
+  configured on PyPI (not manageable via the GitHub API).
 - [`settings.json`](./settings.json) - repository settings (auto-merge on; squash **and** merge-commit
   allowed; rebase off; auto-delete-on-merge **off**). The repo-wide auto-delete **setting** is off so a
   `develop -> main` promotion does not delete `develop` (GitHub's auto-delete would remove the merged head
@@ -34,8 +40,11 @@ Secret **values** are never readable through the API, so the script only asserts
 needs app-level auth, so the App-installation check does not fail the audit. Set the values in the
 repository (or organization) secret store directly. PyPI publishing uses **OIDC Trusted Publishing**
 ([`publish-release.yml`](../.github/workflows/publish-release.yml)'s `publish-pypi` job), so there is no
-external publish API key for this script to verify - instead, register this repo + workflow as a pending
-publisher on PyPI and create a `pypi` deployment environment restricted to `main` and `develop`.
+external publish API key for this script to verify. The GitHub half of that gate - the `pypi` environment
+and its `main`/`develop` branch policy - **is** managed and audited here (see
+[`environment-pypi.json`](./environment-pypi.json)); only the PyPI-side Trusted Publisher (registering this
+repo + workflow and constraining it to the `pypi` environment) is configured on PyPI and noted for manual
+verification.
 
 ## Applying, and the required-check rename lockstep
 
@@ -49,7 +58,7 @@ So whenever the ruleset JSON or that job name changes, run `apply` against the l
 that ships the workflow edit, then `check`:
 
 ```sh
-REPO=ptr727/aiopurpleair ./repo-config/configure.sh apply   # sync live rulesets + settings + security
+REPO=ptr727/aiopurpleair ./repo-config/configure.sh apply   # sync live rulesets + env + settings + security
 REPO=ptr727/aiopurpleair ./repo-config/configure.sh check   # confirm no drift
 ```
 
