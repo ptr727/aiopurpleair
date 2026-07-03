@@ -1,0 +1,112 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aiopurpleair-ptr727"
+description = "Async Python client for the PurpleAir API, with the organization endpoint and typed error codes."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Pieter Viljoen" }]
+requires-python = ">=3.13"
+keywords = ["purpleair", "air-quality", "asyncio", "aiohttp", "pydantic"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Home Automation",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dynamic = ["version"]
+dependencies = [
+    "aiohttp>=3.11.0",
+    "certifi>=2023.07.22",
+    "pydantic>=2.0.0,<3.0.0",
+    "yarl>=1.9.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/ptr727/aiopurpleair"
+Source = "https://github.com/ptr727/aiopurpleair"
+Issues = "https://github.com/ptr727/aiopurpleair/issues"
+
+# uv-native dev dependency group (PEP 735). Bounds are lower-only so the
+# every-tier Dependabot policy keeps tooling on the latest releases.
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6",
+    "aresponses>=3.0,<4.0",
+    "syrupy>=4.8",
+    "coverage[toml]>=7.6",
+    "ruff>=0.9",
+    "mypy>=1.13",
+    "pyright>=1.1.390",
+]
+
+[tool.hatch.version]
+path = "src/aiopurpleair/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aiopurpleair"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "LICENSE", "NOTICE", "pyproject.toml"]
+
+# --- Tooling: latest versions, analysis targeted at the 3.13 floor so 3.13
+# compatibility is statically enforced while CI exercises 3.13 and 3.14. ---
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "N", "SIM", "RUF"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["pydantic.mypy"]
+strict = true
+warn_unreachable = true
+show_error_codes = true
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.13"
+typeCheckingMode = "standard"
+# Tight types on the public library surface; tests stay at standard mode
+# (fixtures, mocks, and parametrize args are commonly looser).
+strict = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=aiopurpleair",
+    "--cov-report=term-missing",
+]
+
+[tool.coverage.run]
+source = ["aiopurpleair"]
+
+[tool.coverage.report]
+exclude_lines = ["raise NotImplementedError", "if TYPE_CHECKING:"]
+fail_under = 100
+show_missing = true

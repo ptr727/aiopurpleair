@@ -1,0 +1,57 @@
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Every ecosystem is listed twice, target-branch main and develop, so Dependabot opens parallel PRs that keep
+# both branches current independently. main is listed because consumers (PyPI, GitHub releases) pull from it
+# directly, and the develop -> main release gap can be long, so main must not wait for a promotion to get its
+# dependency bumps.
+#
+# The merge-bot (.github/workflows/merge-bot-pull-request.yml) picks the merge method per base (squash on
+# develop, merge on main) and auto-merges both. develop is forward-only: no main -> develop back-merges, each
+# branch absorbs its own bot PRs. Dependabot opens CVE security PRs against the default branch (main) whatever
+# the target-branch, and the merge-bot handles them in the same path.
+version: 2
+updates:
+
+  # ----- uv (Python library) -----
+
+  - package-ecosystem: "uv"
+    target-branch: "main"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      uv-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    target-branch: "develop"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      uv-deps:
+        patterns:
+          - "*"
+
+  # ----- github-actions -----
+
+  - package-ecosystem: "github-actions"
+    target-branch: "main"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    target-branch: "develop"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"

@@ -1,0 +1,81 @@
+name: Publish project release action
+
+# Branch-scoped self-publisher: a push to main or develop that changes a shipped input, or a manual dispatch,
+# publishes that branch.
+#
+# - Trigger: a push that changes a shipped input (the on.push.paths inclusion list below - library source,
+#   package metadata, version floor, or the locked dependency set), or a workflow_dispatch on the target
+#   branch. uv.lock is listed: a PyPI release cannot be re-pushed for the same version, so a dependency bump
+#   must republish to keep the package's declared dependencies current - this closes the stale/vulnerable
+#   window.
+# - Output: main publishes a stable release, develop a .dev0 prerelease. A dispatch force-publishes its branch.
+# - Gate: publish-pypi needs the same validate-task the PR runs, so nothing publishes that would fail
+#   validation, on any path (push, dispatch, or force-push).
+# - The merge-bot merges with an App token, so its merge commits reach this push trigger.
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/aiopurpleair/**'
+      - 'pyproject.toml'
+      - 'version.json'
+      - 'uv.lock'
+  workflow_dispatch:
+
+# Ref-independent group so concurrent publishes serialize, and cancel-in-progress: false so a publish is
+# never cancelled mid-release (a half-created GitHub release or partial PyPI upload).
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+
+  # The same lint + test gate the PR runs. publish-pypi needs it, so a failing test or lint blocks the release.
+  validate:
+    name: Validate job
+    uses: ./.github/workflows/validate-task.yml
+    secrets: inherit
+
+  # Build, version, validate, and cut the GitHub release for the triggering branch, and upload the wheel +
+  # sdist for publish-pypi. Grants the write scope the github-release job needs (the task declares none, so
+  # the read-only smoke caller is not forced to over-grant).
+  build:
+    name: Build project release job
+    needs: validate
+    uses: ./.github/workflows/build-release-task.yml
+    secrets: inherit
+    permissions:
+      contents: write
+    with:
+      publish: true
+      smoke: false
+      branch: ${{ github.ref_name }}
+
+  # OIDC Trusted Publishing: no stored API key. Downloads this run's build artifact and uploads it to PyPI.
+  # The pypi environment's deployment branch rule restricts uploads to main + develop as defense in depth.
+  publish-pypi:
+    name: Publish PyPI library job
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/aiopurpleair-ptr727/
+    # id-token:write for Trusted Publishing's OIDC exchange, contents:read for repo metadata.
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+
+      - name: Download build artifacts step
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: aiopurpleair-build-${{ github.ref_name }}
+          path: ./dist
+
+      - name: Publish to PyPI step
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        with:
+          packages-dir: ./dist
+          # Skip rather than fail when the version already exists (a re-run or a no-change dispatch).
+          skip-existing: true

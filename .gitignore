@@ -1,0 +1,30 @@
+# Byte-compiled / cached Python
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+/build/
+/dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+htmlcov/
+
+# Tooling caches
+.ruff_cache/
+.mypy_cache/
+.pyright/
+
+# uv keeps its cache outside the tree; uv.lock is committed. Nothing else to ignore here.
+
+# Editor / agent
+.claude
+.codex

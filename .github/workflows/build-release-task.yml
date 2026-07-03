@@ -1,0 +1,167 @@
+name: Build project release task
+
+# The single build/version/release task, called by publish-release (real publish) and test-pull-request
+# (smoke). NBGV runs once in get-version and threads the version to every consumer. github.ref_name decides
+# everything: main builds a stable PEP 440 version, every other branch a .dev0 prerelease. On a real publish
+# the build job uploads the wheel + sdist as a run artifact for publish-release's publish-pypi job, and the
+# github-release job cuts the GitHub release. Permissions are granted by the caller (this task declares none)
+# so the smoke caller, which grants only read, does not startup-fail on a write-scoped job.
+
+on:
+  workflow_call:
+    inputs:
+      # Create the GitHub release and upload the build artifact for the publisher. Off for smoke.
+      publish:
+        required: false
+        type: boolean
+        default: false
+      # Build and test only, never publish or upload. Forces every publish step off regardless of publish.
+      smoke:
+        required: false
+        type: boolean
+        default: false
+      # Logical branch driving the PEP 440 version (develop => .dev0 prerelease, otherwise plain release) and
+      # the branch-suffixed artifact name. Required; the caller passes github.ref_name.
+      branch:
+        required: true
+        type: string
+
+jobs:
+
+  get-version:
+    name: Get version information job
+    uses: ./.github/workflows/get-version-task.yml
+
+  # Entry gate: assert branch and version classification agree before any build, so a misclassification fails
+  # fast. main must be a public release (no prerelease '-'), and every other branch must carry one.
+  validate-release:
+    name: Validate release version job
+    needs: [get-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch and version consistency step
+        env:
+          SEMVER2: ${{ needs.get-version.outputs.SemVer2 }}
+          REF_NAME: ${{ github.ref_name }}
+          SMOKE: ${{ inputs.smoke }}
+        run: |
+          set -euo pipefail
+          # Smoke never publishes, so the publish-time branch/version gate does not apply. Smoke also runs on
+          # branches whose classification will not match an eventual publish target (a feature-branch smoke
+          # reads prerelease and would trip the main arm of a main-base PR), so skip it on smoke.
+          if [[ "$SMOKE" == "true" ]]; then
+            echo "Smoke build; skipping release version validation."
+            exit 0
+          fi
+          # Strip +buildmetadata. Only a '-' in the core/prerelease segment marks a prerelease.
+          CORE_AND_PRE="${SEMVER2%%+*}"
+          if [[ "$REF_NAME" == "main" ]]; then
+            if [[ "$CORE_AND_PRE" == *-* ]]; then
+              echo "::error::Public (main) version '$SEMVER2' carries a prerelease suffix; refusing to publish."
+              exit 1
+            fi
+          elif [[ "$CORE_AND_PRE" != *-* ]]; then
+            echo "::error::Prerelease ($REF_NAME) version '$SEMVER2' has no prerelease suffix; refusing to publish."
+            exit 1
+          fi
+
+  build:
+    name: Build PyPI library job
+    needs: [get-version, validate-release]
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Pin to the versioned commit so the package and the release tag match even if the branch advances
+      # mid-run. NBGV already ran in get-version; this is a build checkout only.
+      - name: Checkout code step
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.get-version.outputs.GitCommitId }}
+
+      - name: Setup uv step
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Sync dependencies step
+        run: uv sync --all-groups --frozen
+
+      # PEP 440 version: develop -> M.N.P.B.dev0 (prerelease), else M.N.P.B. The NBGV git height sits in the
+      # release segment, so develop's normally exceeds main's and `pip install --pre` picks the dev build over
+      # the main release.
+      - name: Compute PyPI version step
+        id: pypiver
+        env:
+          AFV: ${{ needs.get-version.outputs.AssemblyFileVersion }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          if [[ "$BRANCH" == "develop" ]]; then
+            version="${AFV}.dev0"
+          else
+            version="$AFV"
+          fi
+          echo "PyPI version for branch $BRANCH: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Rewrite the hardcoded __version__ in _version.py (the single source hatchling reads) with the computed
+      # version. Done after sync so the frozen resolve is unaffected.
+      - name: Write version into _version.py step
+        env:
+          VERSION: ${{ steps.pypiver.outputs.version }}
+        run: |
+          set -euo pipefail
+          sed -i 's/^__version__ = .*/__version__ = "'"$VERSION"'"/' src/aiopurpleair/_version.py
+
+      - name: Build sdist and wheel step
+        run: uv build
+
+      # Branch-suffixed so the publisher can address this branch's build. Skipped on smoke: the publish-pypi
+      # and github-release jobs run only on a real publish, so nothing would consume it.
+      - name: Upload build artifacts step
+        if: ${{ !inputs.smoke }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: aiopurpleair-build-${{ inputs.branch }}
+          path: dist/*
+          if-no-files-found: error
+          # Consumed within this run by the publisher; minimize artifact storage.
+          retention-days: 1
+
+  github-release:
+    name: Publish GitHub release job
+    if: ${{ inputs.publish && !inputs.smoke }}
+    needs: [get-version, build]
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Same versioned commit (GitCommitId) the build used, so the release tag and the LICENSE/README files
+      # match it.
+      - name: Checkout code step
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.get-version.outputs.GitCommitId }}
+
+      - name: Download build artifacts step
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: aiopurpleair-build-${{ inputs.branch }}
+          path: ./dist
+
+      # softprops creates the tag from tag_name if absent. target_commitish MUST be the built commit, or
+      # GitHub tags the release on the default branch. prerelease follows the branch: everything but main.
+      - name: Create GitHub release step
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        with:
+          tag_name: ${{ needs.get-version.outputs.SemVer2 }}
+          target_commitish: ${{ needs.get-version.outputs.GitCommitId }}
+          prerelease: ${{ github.ref_name != 'main' }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/*
+            LICENSE
+            README.md

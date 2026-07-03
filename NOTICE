@@ -1,0 +1,23 @@
+aiopurpleair
+Copyright 2026 Pieter Viljoen
+
+This product includes software originally developed by Aaron Bach (@bachya) as
+the `aiopurpleair` library (https://github.com/bachya/aiopurpleair), licensed
+under the MIT License, Copyright (c) 2024 Aaron Bach.
+
+This repository is an independent continuation of that library. It began as the
+`feat/organization-endpoint-and-error-codes` branch of a fork, adding a
+`GET /v1/organization` endpoint and a typed exception hierarchy mapped from the
+PurpleAir API's documented error codes. Two upstream contributions related to
+this work were abandoned after the upstream maintainer became unresponsive:
+
+  - The additions above, proposed against bachya/aiopurpleair, were not merged;
+    they are now maintained here and published to PyPI as `aiopurpleair-ptr727`.
+  - The companion Home Assistant integration was proposed as
+    home-assistant/core#140901 and is maintained separately as the
+    `homeassistant-purpleair` HACS custom integration.
+
+The original MIT copyright notice is retained in LICENSE alongside the current
+maintainer's. The import package name remains `aiopurpleair`; the distribution
+name `aiopurpleair-ptr727` keeps it distinct from the canonical `aiopurpleair`
+distribution on PyPI.

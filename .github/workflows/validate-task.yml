@@ -1,0 +1,92 @@
+name: Validate task
+
+# The single validation gate: the full lint set plus the test matrix, enforced in CI from the same
+# pyproject config the editor uses. Reused by test-pull-request (which produces the required status check)
+# and by publish-release (whose publish job needs it), so the PR gate and the publish gate run the identical
+# validation from one definition, and nothing publishes that would fail the PR.
+
+on:
+  workflow_call:
+    secrets:
+      # Codecov upload token. Optional: the upload is best-effort (continue-on-error) so a repo without the
+      # secret still passes validation.
+      CODECOV_TOKEN:
+        required: false
+
+jobs:
+
+  # ruff (lint + format), mypy (strict, src only), and pyright (src + tests) - the same checks the editor
+  # runs interactively, enforced in CI from the shared pyproject config. Runs on the 3.13 floor.
+  lint:
+    name: Lint job
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout code step
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup uv step
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Sync dependencies step
+        run: uv sync --all-groups --frozen
+
+      - name: Lint with ruff step
+        run: uv run ruff check
+
+      - name: Verify formatting with ruff step
+        run: uv run ruff format --check
+
+      # mypy targets the shipped library surface only (src). pyright covers src + tests via pyproject include.
+      - name: Type check with mypy step
+        run: uv run mypy src
+
+      - name: Type check with pyright step
+        run: uv run pyright
+
+  # Full test suite across every supported interpreter. pytest enforces 100% coverage (fail_under) and the
+  # syrupy snapshots from the shared pyproject config; a regression on any interpreter fails the gate.
+  test:
+    name: Test job
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13', '3.14']
+
+    steps:
+
+      - name: Checkout code step
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup uv step
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Sync dependencies step
+        run: uv sync --all-groups --frozen
+
+      # --cov-report=xml adds the Codecov input on top of the pyproject term-missing report and the 100%
+      # fail_under gate; syrupy snapshot assertions run as ordinary tests.
+      - name: Run pytest step
+        run: uv run pytest --cov-report=xml
+
+      # Best-effort coverage upload. continue-on-error + fail_ci_if_error: false so a missing CODECOV_TOKEN
+      # (or a Codecov hiccup) never reds the required gate. flags key on the interpreter so each matrix leg
+      # stays distinct in the Codecov dashboard.
+      - name: Upload coverage to Codecov step
+        continue-on-error: true
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: python-${{ matrix.python-version }}
+          fail_ci_if_error: false
