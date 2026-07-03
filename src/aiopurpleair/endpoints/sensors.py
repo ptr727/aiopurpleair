@@ -8,6 +8,8 @@ from datetime import datetime
 from aiopurpleair.const import LocationType
 from aiopurpleair.endpoints import APIEndpointsBase
 from aiopurpleair.models.sensors import (
+    GetSensorHistoryRequest,
+    GetSensorHistoryResponse,
     GetSensorRequest,
     GetSensorResponse,
     GetSensorsRequest,
@@ -105,6 +107,82 @@ class SensorsEndpoints(APIEndpointsBase):
             GetSensorsResponse,
         )
         return response
+
+    async def async_get_sensor_history(  # pylint: disable=too-many-arguments
+        self,
+        sensor_index: int,
+        fields: list[str],
+        *,
+        read_key: str | None = None,
+        start_timestamp_utc: datetime | None = None,
+        end_timestamp_utc: datetime | None = None,
+        average: int | None = None,
+    ) -> GetSensorHistoryResponse:
+        """Get historical data for a sensor.
+
+        Args:
+            sensor_index: The sensor index to get history for.
+            fields: The sensor data fields to include.
+            read_key: An optional read key for a private sensor.
+            start_timestamp_utc: The start of the history window (in UTC).
+            end_timestamp_utc: The end of the history window (in UTC).
+            average: The averaging period in minutes (e.g. 0, 10, 60, 1440).
+
+        Returns:
+            An API response payload in the form of a Pydantic model.
+        """
+        response: GetSensorHistoryResponse = await self._async_endpoint_request_with_models(
+            f"/sensors/{sensor_index}/history",
+            (
+                ("fields", fields),
+                ("read_key", read_key),
+                ("start_timestamp", start_timestamp_utc),
+                ("end_timestamp", end_timestamp_utc),
+                ("average", average),
+            ),
+            GetSensorHistoryRequest,
+            GetSensorHistoryResponse,
+        )
+        return response
+
+    async def async_get_sensor_history_csv(  # pylint: disable=too-many-arguments
+        self,
+        sensor_index: int,
+        fields: list[str],
+        *,
+        read_key: str | None = None,
+        start_timestamp_utc: datetime | None = None,
+        end_timestamp_utc: datetime | None = None,
+        average: int | None = None,
+    ) -> str:
+        """Get historical data for a sensor as raw CSV.
+
+        Args:
+            sensor_index: The sensor index to get history for.
+            fields: The sensor data fields to include.
+            read_key: An optional read key for a private sensor.
+            start_timestamp_utc: The start of the history window (in UTC).
+            end_timestamp_utc: The end of the history window (in UTC).
+            average: The averaging period in minutes (e.g. 0, 10, 60, 1440).
+
+        Returns:
+            The raw CSV response body as a string.
+        """
+        request = self._validate_request(
+            (
+                ("fields", fields),
+                ("read_key", read_key),
+                ("start_timestamp", start_timestamp_utc),
+                ("end_timestamp", end_timestamp_utc),
+                ("average", average),
+            ),
+            GetSensorHistoryRequest,
+        )
+        return await self._api.async_request_text(
+            "get",
+            f"/sensors/{sensor_index}/history/csv",
+            params=request.model_dump(exclude_none=True),
+        )
 
     async def async_get_nearby_sensors(  # pylint: disable=too-many-arguments
         self,

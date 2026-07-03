@@ -194,6 +194,48 @@ class DataInitializingError(RequestError):
     pass
 
 
+class GroupNotFoundError(NotFoundError):
+    """Define a group-not-found error (HTTP 404, Groups API)."""
+
+    pass
+
+
+class DuplicateGroupEntryError(InvalidRequestError):
+    """Define a duplicate-group-member error (HTTP 409, Groups API)."""
+
+    pass
+
+
+class GroupContainsMembersError(InvalidRequestError):
+    """Define a delete-non-empty-group error (HTTP 409, Groups API)."""
+
+    pass
+
+
+class NothingDeletedError(InvalidRequestError):
+    """Define a delete-matched-nothing error (HTTP 400, Groups API)."""
+
+    pass
+
+
+class MissingIdentifierError(InvalidRequestError):
+    """Define a missing-identifier error (HTTP 400, Groups API)."""
+
+    pass
+
+
+class MissingNameValueError(InvalidRequestError):
+    """Define a missing-name-value error (HTTP 400, Groups API)."""
+
+    pass
+
+
+class InvalidParameterLengthError(InvalidRequestError):
+    """Define an invalid-parameter-length error (HTTP 400)."""
+
+    pass
+
+
 ERROR_CODE_MAP = {
     "ApiKeyMissingError": InvalidApiKeyError,
     "ApiKeyInvalidError": InvalidApiKeyError,
@@ -224,6 +266,13 @@ ERROR_CODE_MAP = {
     "RateLimitExceededError": RateLimitExceededError,
     "DataInitializingError": DataInitializingError,
     "NotFoundError": NotFoundError,
+    "GroupNotFoundError": GroupNotFoundError,
+    "DuplicateGroupEntryError": DuplicateGroupEntryError,
+    "GroupContainsMembersError": GroupContainsMembersError,
+    "NothingDeletedError": NothingDeletedError,
+    "MissingIdentifierError": MissingIdentifierError,
+    "MissingNameValueError": MissingNameValueError,
+    "InvalidParameterLengthError": InvalidParameterLengthError,
 }
 
 

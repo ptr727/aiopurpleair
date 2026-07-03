@@ -4,8 +4,9 @@ Curated highlights of what's shipped. The canonical per-version release ledger (
 
 ## Release History
 
-- **Version 2026.8**:
-  - Requires Python 3.13 or newer; tested on 3.13 and 3.14.
+- **Version 1.0.0**:
+  - First release of the independent, standalone library, published to PyPI as `ptr727-aiopurpleair`. A maintained continuation (no fork lineage) of the work from the now-closed upstream PR [bachya/aiopurpleair#719](https://github.com/bachya/aiopurpleair/pull/719). Requires Python 3.13 or newer; tested on 3.13 and 3.14.
+  - **Full endpoint coverage** - keys, sensors (list, single, and history as JSON or CSV), organization, and the complete Groups API (group and member management, member data, and member history CSV). All 11 paths of the reconstructed OpenAPI spec are covered and validated, opt-in, against the live API.
   - **Organization endpoint** - a new `GET /v1/organization` call (`api.organizations.async_get_organization()`) reports the account's **remaining API points** and **consumption rate**, alongside the organization id, name, and API version. It lets a consumer surface a low-points warning before queries start failing.
   - **Typed exception hierarchy** - each of the PurpleAir API's documented error codes maps to a specific exception subclass, so callers catch a precise condition (`InvalidDataReadKeyError`, `ApiKeyTypeMismatchError`, `ApiDisabledError`, `PaymentRequiredError`, `RateLimitExceededError`, ...) instead of pattern-matching on `str(err)`. All 30 subclasses derive from a single `PurpleAirError` base, grouped under `RequestError` / `InvalidApiKeyError` / `InvalidRequestError` intermediates so a caller can catch broadly or narrowly. An unrecognized code still raises `RequestError`.
   - **Timezone-aware UTC timestamps** - response timestamps are parsed to `datetime` objects with an explicit UTC timezone, never naive datetimes, so downstream consumers (e.g. Home Assistant's timestamp sensors) accept them directly.

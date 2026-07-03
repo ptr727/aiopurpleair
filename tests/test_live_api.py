@@ -14,12 +14,14 @@ Run::
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from aiopurpleair import API
 from aiopurpleair.const import SENSOR_FIELDS
+from aiopurpleair.errors import ApiDisabledError
 from aiopurpleair.models.keys import ApiKeyType
 
 
@@ -43,6 +45,8 @@ _ENV = _load_env() if _LIVE else {}
 # overdrawn/negative points balance).
 _API_KEYS = [key for key in (_ENV.get("PURPLEAIR_API_KEY", ""), _ENV.get("PURPLEAIR_API_KEY_2", "")) if key]
 _PRIMARY_KEY = _API_KEYS[0] if _API_KEYS else ""
+# A WRITE key (same account) enables the self-cleaning groups round-trip.
+_WRITE_KEY = _ENV.get("PURPLEAIR_API_KEY_WRITE", "")
 # Parametrize labels must NOT be the raw keys (they would leak into test IDs and
 # CI logs); use positional labels instead.
 _KEY_PARAMS = _API_KEYS or [""]
@@ -103,3 +107,68 @@ async def test_live_sensors_parse_with_full_field_catalog() -> None:
     for index, read_key in pairs:
         response = await api.sensors.async_get_sensor(index, fields=fields, read_key=read_key)
         assert response.sensor.sensor_index == index
+
+
+async def test_live_sensor_history() -> None:
+    """The sensor history endpoints return parseable JSON and raw CSV.
+
+    Requesting a real 24-hour window for an owned sensor proves the history
+    request encoding and JSON/CSV response shapes against the live API. The
+    history endpoint is a gated feature; if it is disabled for the key the
+    request still round-trips correctly (raising ``ApiDisabledError``), so the
+    test skips rather than fails.
+    """
+    pairs = _sensor_pairs()
+    if not pairs:
+        pytest.skip("no PURPLEAIR_SENSOR_INDEX_1/2 in .env.test")
+    index, read_key = pairs[0]
+    end = datetime.now(UTC)
+    start = end - timedelta(days=1)
+    fields = ["humidity", "temperature", "pm2.5_atm"]
+
+    # History is a gated feature enabled per key; try each configured key and use
+    # the first that has it, skipping only if it is disabled for all of them.
+    for key in _API_KEYS:
+        api = API(key)
+        try:
+            history = await api.sensors.async_get_sensor_history(
+                index, fields, read_key=read_key, start_timestamp_utc=start, end_timestamp_utc=end, average=60
+            )
+        except ApiDisabledError:
+            continue
+        assert history.sensor_index == index
+        assert history.average == 60
+        assert "time_stamp" in history.fields
+
+        csv = await api.sensors.async_get_sensor_history_csv(
+            index, fields, read_key=read_key, start_timestamp_utc=start, end_timestamp_utc=end, average=60
+        )
+        assert csv.splitlines()[0].startswith("time_stamp,sensor_index")
+        return
+    pytest.skip("the history endpoint is disabled for all configured API keys")
+
+
+@pytest.mark.skipif(
+    not (_LIVE and _WRITE_KEY and _PRIMARY_KEY),
+    reason="need PURPLEAIR_API_KEY_WRITE and a same-account PURPLEAIR_API_KEY in .env.test",
+)
+async def test_live_groups_roundtrip() -> None:
+    """A group can be created (WRITE key), listed (READ key), and deleted.
+
+    Reads and writes use different key types even within groups: create/delete
+    take the WRITE key, list/detail take the same account's READ key. This is
+    the only live test that writes; it always deletes the group it creates,
+    even on assertion failure.
+    """
+    write_api = API(_WRITE_KEY)
+    read_api = API(_PRIMARY_KEY)
+    created = await write_api.groups.async_create_group("aiopurpleair-live-test")
+    group_id = created.group_id
+    try:
+        assert group_id
+        # The list is eventually consistent, so just assert the READ-key call
+        # succeeds and returns groups rather than requiring the new one yet.
+        listing = await read_api.groups.async_get_groups()
+        assert isinstance(listing.groups, list)
+    finally:
+        await write_api.groups.async_delete_group(group_id)

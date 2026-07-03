@@ -1,0 +1,15 @@
+{
+  "api_version": "V1.2.0-1.1.45",
+  "time_stamp": 1667666223,
+  "data_time_stamp": 1667666181,
+  "group_id": 1234,
+  "sensor": {
+    "sensor_index": 131075,
+    "name": "Mariners Bluff",
+    "latitude": 33.51511,
+    "longitude": -117.67972,
+    "humidity": 33,
+    "temperature": 69,
+    "pm2.5_atm": 0.0
+  }
+}

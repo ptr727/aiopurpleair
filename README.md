@@ -21,7 +21,19 @@ Async Python client library for the PurpleAir air-quality API, with the organiza
 
 ### Release Notes
 
-See [`HISTORY.md`](./HISTORY.md) for the release notes ledger.
+Release highlights - see [Release History](./HISTORY.md) for details.
+
+**Version 1.0.0**:
+
+- First release of the independent, standalone library, published to PyPI as `ptr727-aiopurpleair`. It is a maintained continuation (no fork lineage) of the work from the now-closed upstream PR [bachya/aiopurpleair#719][bachya-pr-link]. Requires Python 3.13 or newer; tested on 3.13 and 3.14.
+- **Full API coverage** - keys, sensors (list, single, and history as JSON or CSV), organization, and the complete Groups API (group and member management, member data, and member history CSV). Coverage is validated against a reconstructed OpenAPI spec and, opt-in, against the live API.
+- **Organization endpoint** - `GET /v1/organization` (`api.organizations.async_get_organization()`) reports the account's remaining API points and consumption rate, alongside the organization id, name, and API version, so a consumer can surface a low-points warning before queries start failing.
+- **Typed exception hierarchy** - each documented PurpleAir error code maps to a specific exception subclass (`InvalidApiKeyError`, `PaymentRequiredError`, `RateLimitExceededError`, ...), grouped under `RequestError` / `InvalidApiKeyError` / `InvalidRequestError` intermediates so callers catch broadly or narrowly; all derive from `PurpleAirError`.
+- **Timezone-aware UTC timestamps** - response timestamps are parsed to explicit-UTC `datetime` objects, never naive, so consumers like Home Assistant accept them directly.
+- **Modern packaging** - hatchling + uv on a src-layout, automatic NBGV versioning (no manual tags), OIDC Trusted-Publishing releases, a 100% coverage gate, and syrupy snapshot tests.
+
+See [GitHub Releases][releases-link] for per-release changes.\
+See [Release History](./HISTORY.md) for historic changes.
 
 ## Getting Started
 
@@ -68,7 +80,9 @@ See [Usage](#usage) for detailed usage instructions.
   - [Usage](#usage)
     - [Checking an API Key](#checking-an-api-key)
     - [Getting Sensors](#getting-sensors)
+    - [Getting Sensor History](#getting-sensor-history)
     - [Getting the Organization](#getting-the-organization)
+    - [Working with Groups](#working-with-groups)
     - [Error Handling](#error-handling)
     - [Connection Pooling](#connection-pooling)
   - [Installation](#installation)
@@ -81,10 +95,15 @@ See [Usage](#usage) for detailed usage instructions.
 
 ## Features
 
-- Async client for the PurpleAir API, covering the sensors and keys endpoints.
-- `GET /v1/organization` endpoint exposing remaining API points and consumption rate.
-- Typed exception hierarchy mapped from the API's documented error codes.
-- Timezone-aware UTC datetimes and typed Pydantic response models with a `py.typed` marker.
+Full async coverage of the PurpleAir API, each method mirroring a documented endpoint:
+
+- **Keys** - validate an API key and read its type (`GET /v1/keys`), via `api.async_check_api_key()`.
+- **Sensors** - one sensor, many sensors by field selection, or a distance-sorted nearby search, plus a map-URL helper (`GET /v1/sensors`, `GET /v1/sensors/{sensor_index}`), via `api.sensors`.
+- **Sensor history** - historical time series for a sensor as parsed JSON or raw CSV (`GET /v1/sensors/{sensor_index}/history[/csv]`), via `api.sensors`.
+- **Organization** - the account's remaining API points and consumption rate (`GET /v1/organization`), via `api.organizations`.
+- **Groups** - create, list, inspect, and delete groups; add and remove member sensors; read member sensor data and member history CSV (`/v1/groups*`), via `api.groups`.
+- **Typed errors** - each documented API error code maps to a specific `PurpleAirError` subclass, so callers catch a precise condition instead of parsing `str(err)`.
+- Timezone-aware UTC datetimes and typed Pydantic response models, shipped with a `py.typed` marker.
 - Modern packaging: hatchling, uv, automatic versioning, OIDC-published releases, and 100% test coverage.
 
 ## Usage
@@ -130,6 +149,43 @@ asyncio.run(main())
 
 Private sensors require their per-sensor read key: pass `read_key=` to `async_get_sensor`, or `read_keys=[...]` to `async_get_sensors`. Use `async_get_nearby_sensors(fields, latitude, longitude, distance)` for a distance-sorted search, and `get_map_url(sensor_index)` for a map link.
 
+### Getting Sensor History
+
+Fetch a historical time series for a sensor, as parsed JSON or as raw CSV. The averaging period is in minutes (e.g. `0` for real-time, `60` for hourly, `1440` for daily):
+
+```python
+import asyncio
+from datetime import UTC, datetime, timedelta
+
+from aiopurpleair import API
+
+
+async def main() -> None:
+    """Fetch a day of hourly history for a sensor."""
+    api = API("<API_KEY>")
+    end = datetime.now(UTC)
+    start = end - timedelta(days=1)
+
+    history = await api.sensors.async_get_sensor_history(
+        131075,
+        ["humidity", "temperature", "pm2.5_atm"],
+        start_timestamp_utc=start,
+        end_timestamp_utc=end,
+        average=60,
+    )
+    # >>> history.data == [{"time_stamp": 1667336400, "humidity": 37, ...}, ...]
+
+    csv = await api.sensors.async_get_sensor_history_csv(
+        131075, ["pm2.5_atm"], start_timestamp_utc=start, end_timestamp_utc=end, average=60
+    )
+    # >>> csv.startswith("time_stamp,sensor_index,pm2.5_atm")
+
+
+asyncio.run(main())
+```
+
+The history endpoint is a gated feature; if it is not enabled for your API key the call raises `ApiDisabledError`.
+
 ### Getting the Organization
 
 The organization endpoint reports the account's remaining API points and consumption rate, useful for surfacing a low-points warning before queries start failing:
@@ -152,6 +208,41 @@ async def main() -> None:
 
 asyncio.run(main())
 ```
+
+### Working with Groups
+
+Groups organize sensors for data access. Create and delete operations require a **WRITE** key; reads (list, detail, member data) use a **READ** key:
+
+```python
+import asyncio
+
+from aiopurpleair import API
+
+
+async def main() -> None:
+    """Create a group, add a member, read it back, then clean up."""
+    write_api = API("<WRITE_API_KEY>")
+    read_api = API("<READ_API_KEY>")
+
+    created = await write_api.groups.async_create_group("My Sensors")
+    group_id = created.group_id
+
+    await write_api.groups.async_create_member(group_id, sensor_index=131075)
+
+    groups = await read_api.groups.async_get_groups()
+    detail = await read_api.groups.async_get_group(group_id)
+    # >>> detail.members == [GroupMember(id=..., sensor_index=131075, ...)]
+
+    members = await read_api.groups.async_get_members(group_id, ["name", "pm2.5"])
+    # >>> members.data == {131075: SensorModel(...)}
+
+    await write_api.groups.async_delete_group(group_id)
+
+
+asyncio.run(main())
+```
+
+Adding a private sensor also requires its registration `owner_email`. Per-member history is available as CSV via `async_get_member_history_csv(group_id, member_id, fields, ...)`.
 
 ### Error Handling
 
@@ -250,6 +341,8 @@ uv run --with pyyaml --with openapi-spec-validator python scripts/generate_opena
 ```
 
 The generator takes the API version from the docs' changelog (the apiDoc build-metadata version lags behind), validates the result, and writes `docs/purpleair-openapi.yaml`. A non-empty diff means the upstream API changed. See [`AGENTS.md`](./AGENTS.md) for how the code is validated against the spec.
+
+**Coverage**: all 11 paths of the spec (currently API `1.2.0`) are implemented - keys, sensors (list, single, and history JSON/CSV), organization, and the full Groups API (group and member management, member data, and member history). The single-sensor `stats`/`stats_a`/`stats_b` blocks are returned as part of the sensor payload but are not requestable `fields` values, so they are parsed on the response but excluded from the requestable field catalog.
 
 ## Contributing
 

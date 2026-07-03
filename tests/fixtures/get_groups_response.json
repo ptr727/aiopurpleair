@@ -1,0 +1,17 @@
+{
+  "api_version": "V1.2.0-1.1.45",
+  "time_stamp": 1667503589,
+  "data_time_stamp": 1667503531,
+  "groups": [
+    {
+      "id": 1234,
+      "name": "My Sensors",
+      "created": 1632955574
+    },
+    {
+      "id": 1235,
+      "name": "Neighborhood",
+      "created": 1633041974
+    }
+  ]
+}
