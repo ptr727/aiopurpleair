@@ -88,20 +88,22 @@ jobs:
       - name: Sync dependencies step
         run: uv sync --all-groups --frozen
 
-      # PEP 440 version: develop -> M.N.P.B.dev0 (prerelease), else M.N.P.B. The NBGV git height sits in the
-      # release segment, so develop's normally exceeds main's and `pip install --pre` picks the dev build over
-      # the main release.
+      # PEP 440 version from NBGV's height version (Major.Minor.Height): main -> X.Y.Z, develop -> X.Y.Z.dev0.
+      # Derived from SemVer2 with any -g<sha> prerelease segment stripped (SemVer2 is clean X.Y.Z on main and
+      # X.Y.Z-g<sha> elsewhere). NOT AssemblyFileVersion - that is a 4-part X.Y.Z.Revision whose revision
+      # component would leak a meaningless extra number into the PyPI version.
       - name: Compute PyPI version step
         id: pypiver
         env:
-          AFV: ${{ needs.get-version.outputs.AssemblyFileVersion }}
+          SEMVER2: ${{ needs.get-version.outputs.SemVer2 }}
           BRANCH: ${{ inputs.branch }}
         run: |
           set -euo pipefail
+          base="${SEMVER2%%-*}"
           if [[ "$BRANCH" == "develop" ]]; then
-            version="${AFV}.dev0"
+            version="${base}.dev0"
           else
-            version="$AFV"
+            version="$base"
           fi
           echo "PyPI version for branch $BRANCH: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
