@@ -268,7 +268,7 @@ The generator takes the API version from the docs' changelog (the apiDoc build-m
 
 aiopurpleair is an independent, MIT-licensed continuation of the [bachya/aiopurpleair][upstream-link] PurpleAir API client. Its distinguishing capabilities originated in two upstream contributions that were abandoned after the upstream maintainers became unresponsive:
 
-- A pull request against [bachya/aiopurpleair][upstream-link] adding the organization endpoint and typed error codes, which was not merged.
+- A pull request against bachya/aiopurpleair adding the organization endpoint and typed error codes ([bachya/aiopurpleair#719][bachya-pr-link]), which was closed unmerged.
 - A PurpleAir integration proposed for Home Assistant core as [home-assistant/core#140901][hacorepr-link], now maintained separately as the [`homeassistant-purpleair`][hapurpleair-link] HACS custom integration, this library's primary consumer.
 
 The import package name is `aiopurpleair`; the distribution name `ptr727-aiopurpleair` keeps it distinct from the canonical `aiopurpleair` on PyPI. The original MIT copyright is retained alongside the current maintainer's in [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
@@ -303,6 +303,7 @@ Licensed under the [MIT License][license-link]\
 [aiohttp-link]: https://github.com/aio-libs/aiohttp
 [apidoc-link]: https://apidocjs.com/
 [bachya-link]: https://github.com/bachya
+[bachya-pr-link]: https://github.com/bachya/aiopurpleair/pull/719
 [hacorepr-link]: https://github.com/home-assistant/core/pull/140901
 [hapurpleair-link]: https://github.com/ptr727/homeassistant-purpleair
 [hatchling-link]: https://hatch.pypa.io/latest/

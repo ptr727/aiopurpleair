@@ -11,13 +11,14 @@ This repository is an independent continuation of that library. It began as the
 PurpleAir API's documented error codes. Two upstream contributions related to
 this work were abandoned after the upstream maintainer became unresponsive:
 
-  - The additions above, proposed against bachya/aiopurpleair, were not merged;
-    they are now maintained here and published to PyPI as `aiopurpleair-ptr727`.
+  - The additions above, proposed against bachya/aiopurpleair as pull request
+    #719 (https://github.com/bachya/aiopurpleair/pull/719), were not merged; they
+    are now maintained here and published to PyPI as `ptr727-aiopurpleair`.
   - The companion Home Assistant integration was proposed as
     home-assistant/core#140901 and is maintained separately as the
     `homeassistant-purpleair` HACS custom integration.
 
 The original MIT copyright notice is retained in LICENSE alongside the current
 maintainer's. The import package name remains `aiopurpleair`; the distribution
-name `aiopurpleair-ptr727` keeps it distinct from the canonical `aiopurpleair`
+name `ptr727-aiopurpleair` keeps it distinct from the canonical `aiopurpleair`
 distribution on PyPI.
