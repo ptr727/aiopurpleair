@@ -1,53 +1,94 @@
 # aiopurpleair
 
-[![CI][ci-badge]][ci]
-[![PyPI][pypi-badge]][pypi]
-[![Python versions][pyversions-badge]][pypi]
-[![License][license-badge]][license]
+Async Python client library for the PurpleAir air-quality API, with the organization endpoint and typed error codes.
 
-`aiopurpleair` is a Python, asyncio-based client library for the
-[PurpleAir][purpleair] air-quality API. It covers the sensors and keys
-endpoints, adds a `GET /v1/organization` endpoint for tracking remaining API
-points, and maps the API's documented error codes to a typed exception
-hierarchy.
+## Build and Distribution
 
-> Originally derived from [bachya/aiopurpleair][upstream] by Aaron Bach, now
-> independently maintained. Published to PyPI as **`ptr727-aiopurpleair`**; the
-> import name stays `aiopurpleair`. See [About and History](#about-and-history).
+- **Source Code**: [GitHub][github-link] - Source code, issues, discussions, and CI/CD pipelines.
+- **Versioned Releases**: [GitHub Releases][releases-link] - Version tagged source code and build artifacts.
+- **PyPI Packages**: [PyPI][pypi-link] - Python wheel + sdist published to PyPI.org as `ptr727-aiopurpleair`.
 
-- [Installation](#installation)
-- [Python Versions](#python-versions)
-- [Usage](#usage)
-  - [Checking an API Key](#checking-an-api-key)
-  - [Getting Sensors](#getting-sensors)
-  - [Getting the Organization](#getting-the-organization)
-  - [Error Handling](#error-handling)
-  - [Connection Pooling](#connection-pooling)
-- [About and History](#about-and-history)
-- [Development](#development)
-- [License and Attribution](#license-and-attribution)
+### Build Status
 
-## Installation
+[![Releases Build][releasebuildstatus-shield]][actions-link]\
+[![Last Commit][lastcommit-shield]][commits-link]
 
-```bash
-pip install ptr727-aiopurpleair
-```
+### Releases
 
-The distribution name is `ptr727-aiopurpleair` (distinct from the canonical
-`aiopurpleair` on PyPI); the import path is unchanged:
+[![GitHub Release][releaseversion-shield]][releases-link]\
+[![GitHub Pre-Release][prereleaseversion-shield]][releases-link]\
+[![PyPI Release][pypireleaseversion-shield]][pypi-link]
 
-```python
-import aiopurpleair
-```
+### Release Notes
 
-## Python Versions
+See [`HISTORY.md`](./HISTORY.md) for the release notes ledger.
 
-`aiopurpleair` supports Python 3.13 and 3.14.
+## Getting Started
+
+Get started with aiopurpleair in two easy steps:
+
+1. **Add aiopurpleair to your project**:
+
+    ```shell
+    # Add the package to your project (import name stays `aiopurpleair`)
+    pip install ptr727-aiopurpleair
+    ```
+
+2. **Write some code**:
+
+    ```python
+    import asyncio
+
+    from aiopurpleair import API
+
+
+    async def main() -> None:
+        """Check an API key and fetch sensors."""
+        api = API("<API_KEY>")
+        keys = await api.async_check_api_key()
+        sensors = await api.sensors.async_get_sensors(["name", "pm2.5"])
+        organization = await api.organizations.async_get_organization()
+
+
+    asyncio.run(main())
+    ```
+
+See [Usage](#usage) for detailed usage instructions.
+
+## Table of Contents
+
+- [aiopurpleair](#aiopurpleair)
+  - [Build and Distribution](#build-and-distribution)
+    - [Build Status](#build-status)
+    - [Releases](#releases)
+    - [Release Notes](#release-notes)
+  - [Getting Started](#getting-started)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Usage](#usage)
+    - [Checking an API Key](#checking-an-api-key)
+    - [Getting Sensors](#getting-sensors)
+    - [Getting the Organization](#getting-the-organization)
+    - [Error Handling](#error-handling)
+    - [Connection Pooling](#connection-pooling)
+  - [Installation](#installation)
+  - [Questions or Issues](#questions-or-issues)
+  - [Build Artifacts](#build-artifacts)
+  - [Contributing](#contributing)
+  - [Origin](#origin)
+  - [License](#license)
+
+## Features
+
+- Async client for the PurpleAir API, covering the sensors and keys endpoints.
+- `GET /v1/organization` endpoint exposing remaining API points and consumption rate.
+- Typed exception hierarchy mapped from the API's documented error codes.
+- Timezone-aware UTC datetimes and typed Pydantic response models with a `py.typed` marker.
+- Modern packaging: hatchling, uv, automatic versioning, OIDC-published releases, and 100% test coverage.
 
 ## Usage
 
-In-depth documentation on the API is available from [PurpleAir][purpleair-api].
-Unless otherwise noted, `aiopurpleair` follows the API as closely as possible.
+In-depth documentation on the API is available from [PurpleAir][purpleairapi-link]. Unless otherwise noted, aiopurpleair follows the API as closely as possible.
 
 ### Checking an API Key
 
@@ -86,16 +127,11 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-Private sensors require their per-sensor read key: pass `read_key=` to
-`async_get_sensor`, or `read_keys=[...]` to `async_get_sensors`. Use
-`async_get_nearby_sensors(fields, latitude, longitude, distance)` for a
-distance-sorted search, and `get_map_url(sensor_index)` for a map link.
+Private sensors require their per-sensor read key: pass `read_key=` to `async_get_sensor`, or `read_keys=[...]` to `async_get_sensors`. Use `async_get_nearby_sensors(fields, latitude, longitude, distance)` for a distance-sorted search, and `get_map_url(sensor_index)` for a map link.
 
 ### Getting the Organization
 
-The organization endpoint reports the account's remaining API points and
-consumption rate — useful for surfacing a low-points warning before queries
-start failing:
+The organization endpoint reports the account's remaining API points and consumption rate, useful for surfacing a low-points warning before queries start failing:
 
 ```python
 import asyncio
@@ -118,9 +154,7 @@ asyncio.run(main())
 
 ### Error Handling
 
-Each documented PurpleAir API error code maps to a specific exception subclass,
-so callers can catch a precise condition instead of pattern-matching on
-`str(err)`. Every subclass derives from `PurpleAirError`:
+Each documented PurpleAir API error code maps to a specific exception subclass, so callers can catch a precise condition instead of pattern-matching on `str(err)`. Every subclass derives from `PurpleAirError`:
 
 ```python
 import asyncio
@@ -143,13 +177,11 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-All error codes and semantics are verified against the official
-[PurpleAir API documentation][purpleair-api].
+All error codes and semantics are verified against the official [PurpleAir API documentation][purpleairapi-link].
 
 ### Connection Pooling
 
-By default a new connection is created per coroutine. Pass an existing
-[`aiohttp`][aiohttp] `ClientSession` for connection pooling:
+By default a new connection is created per coroutine. Pass an existing [`aiohttp`][aiohttp-link] `ClientSession` for connection pooling:
 
 ```python
 import asyncio
@@ -169,64 +201,99 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-## About and History
+## Installation
 
-This library began as a fork of [bachya/aiopurpleair][upstream] to add two
-capabilities the canonical release lacked: a `GET /v1/organization` endpoint
-and a typed exception hierarchy covering the API's documented error codes.
-Those additions were proposed upstream, but the upstream maintainer became
-unresponsive and the contribution was abandoned.
+**Project integration**:
 
-Rather than leave the work stranded, it is now maintained here as an
-independent library published as `ptr727-aiopurpleair`. A companion effort — a
-PurpleAir integration proposed for Home Assistant core as
-[home-assistant/core#140901][ha-core-pr] — was likewise abandoned and is
-maintained separately as the [`homeassistant-purpleair`][ha-purpleair] HACS
-custom integration, which is this library's primary consumer.
-
-The original MIT copyright is retained in [LICENSE](LICENSE) and [NOTICE](NOTICE).
-
-## Development
-
-This project uses [uv][uv] for environment and dependency management:
-
-```bash
-uv sync --all-groups          # create the venv and install dev dependencies
-uv run ruff check             # lint
-uv run ruff format --check    # format check
-uv run mypy src tests         # type-check (strict)
-uv run pyright                # type-check
-uv run pytest                 # tests, with 100% coverage enforced
+```shell
+# Add the package to your project
+pip install ptr727-aiopurpleair
 ```
 
-Snapshot tests use [syrupy][syrupy]; regenerate snapshots with
-`uv run pytest --snapshot-update` when response models change intentionally.
+```python
+# Import the library (the import name stays `aiopurpleair`)
+import aiopurpleair
+```
 
-Versioning is automatic (Nerdbank.GitVersioning from `version.json` plus git
-height); there is no manual tagging. Releases publish to PyPI via OIDC Trusted
-Publishing on merge to `main` (stable) or `develop` (prerelease).
+The distribution name is `ptr727-aiopurpleair` (distinct from the canonical `aiopurpleair` on PyPI); the import path is unchanged. aiopurpleair supports Python 3.13 and 3.14, and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
 
-## License and Attribution
+## Questions or Issues
 
-MIT — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+**General questions**:
 
-- Original `aiopurpleair` author: Aaron Bach ([@bachya][bachya]).
-- Current maintainer: Pieter Viljoen ([@ptr727][ptr727]).
+- Use the [Discussions][discussions-link] forum for general questions.
 
-[aiohttp]: https://github.com/aio-libs/aiohttp
-[bachya]: https://github.com/bachya
-[ci-badge]: https://img.shields.io/github/actions/workflow/status/ptr727/aiopurpleair/test-pull-request.yml?branch=main
-[ci]: https://github.com/ptr727/aiopurpleair/actions
-[ha-core-pr]: https://github.com/home-assistant/core/pull/140901
-[ha-purpleair]: https://github.com/ptr727/homeassistant-purpleair
-[license]: https://github.com/ptr727/aiopurpleair/blob/main/LICENSE
-[license-badge]: https://img.shields.io/pypi/l/ptr727-aiopurpleair.svg
-[ptr727]: https://github.com/ptr727
-[purpleair]: https://www2.purpleair.com/
-[purpleair-api]: https://api.purpleair.com/#api-welcome
-[pypi]: https://pypi.org/project/ptr727-aiopurpleair/
-[pypi-badge]: https://img.shields.io/pypi/v/ptr727-aiopurpleair.svg
-[pyversions-badge]: https://img.shields.io/pypi/pyversions/ptr727-aiopurpleair.svg
-[syrupy]: https://github.com/syrupy-project/syrupy
-[upstream]: https://github.com/bachya/aiopurpleair
-[uv]: https://github.com/astral-sh/uv
+**Bug reports**:
+
+- Ask in the [Discussions][discussions-link] forum if you are not sure if it is a bug.
+- Check the existing [Issues][issues-link] tracker for known problems.
+- If the issue is unique and a bug, file it in [Issues][issues-link], and include all pertinent steps to reproduce the issue.
+
+## Build Artifacts
+
+**Build process and artifacts**:
+
+- **Package**: a Python wheel + sdist (`ptr727-aiopurpleair`), built with the [hatchling][hatchling-link] backend on a src-layout ([`src/aiopurpleair/`](./src/aiopurpleair/)) and managed with [uv][uv-link].
+- **Versioning**: automatic via [Nerdbank.GitVersioning][nbgv-link] from [`version.json`](./version.json) (`2026.8` base) plus git height; `main` builds a clean stable `X.Y.Z`, `develop` a `X.Y.Z.dev0` prerelease. There is no manual tagging.
+- **Publishing**: releases publish to PyPI over OIDC [Trusted Publishing][trustedpublishing-link] (no stored API token). A shipped-path push to `main` (stable) or `develop` (prerelease), or a manual dispatch, cuts a [GitHub Release][releases-link] and uploads the wheel + sdist to PyPI. See [`WORKFLOW.md`](./WORKFLOW.md) for the complete CI/CD contract.
+
+## Contributing
+
+- **Branching workflow**:
+  - The repo uses a two-branch model with ruleset-enforced merge methods.
+  - Feature branch -> `develop` via **squash merge** (develop is kept linear).
+  - `develop` -> `main` via **merge commit** (preserves develop's commit list on main as the second parent of each release commit).
+  - Dependabot targets `main` and `develop` in parallel via separate PRs and auto-merges every tier once the required check passes.
+  - See [`WORKFLOW.md`](./WORKFLOW.md) and [`AGENTS.md`](./AGENTS.md) for complete details.
+- **Code style**:
+  - See [`CODESTYLE.md`](./CODESTYLE.md) and [`.editorconfig`](./.editorconfig) for Python code style rules. Everything runs through `uv run` (`ruff`, `mypy`, `pyright`, `pytest` with 100% coverage and syrupy snapshots).
+- **Repository setup**:
+  - See [`repo-config/README.md`](./repo-config/README.md) for repo configuration details.
+
+## Origin
+
+aiopurpleair is an independent, MIT-licensed continuation of the [bachya/aiopurpleair][upstream-link] PurpleAir API client. Its distinguishing capabilities originated in two upstream contributions that were abandoned after the upstream maintainers became unresponsive:
+
+- A pull request against [bachya/aiopurpleair][upstream-link] adding the organization endpoint and typed error codes, which was not merged.
+- A PurpleAir integration proposed for Home Assistant core as [home-assistant/core#140901][hacorepr-link], now maintained separately as the [`homeassistant-purpleair`][hapurpleair-link] HACS custom integration, this library's primary consumer.
+
+The import package name is `aiopurpleair`; the distribution name `ptr727-aiopurpleair` keeps it distinct from the canonical `aiopurpleair` on PyPI. The original MIT copyright is retained alongside the current maintainer's in [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
+
+## License
+
+Licensed under the [MIT License][license-link]\
+![GitHub License][license-shield]
+
+- Original `aiopurpleair` author: Aaron Bach ([@bachya][bachya-link]).
+- Current maintainer: Pieter Viljoen ([@ptr727][ptr727-link]).
+
+<!-- Shields links -->
+
+[actions-link]: https://github.com/ptr727/aiopurpleair/actions
+[commits-link]: https://github.com/ptr727/aiopurpleair/commits/main
+[discussions-link]: https://github.com/ptr727/aiopurpleair/discussions
+[github-link]: https://github.com/ptr727/aiopurpleair
+[issues-link]: https://github.com/ptr727/aiopurpleair/issues
+[lastcommit-shield]: https://img.shields.io/github/last-commit/ptr727/aiopurpleair?logo=github&label=Last%20Commit
+[license-link]: ./LICENSE
+[license-shield]: https://img.shields.io/github/license/ptr727/aiopurpleair?label=License
+[prereleaseversion-shield]: https://img.shields.io/github/v/release/ptr727/aiopurpleair?include_prereleases&filter=*-g*&label=GitHub%20Pre-Release&logo=github
+[pypi-link]: https://pypi.org/project/ptr727-aiopurpleair/
+[pypireleaseversion-shield]: https://img.shields.io/pypi/v/ptr727-aiopurpleair?logo=pypi&label=PyPI%20Release
+[releasebuildstatus-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/aiopurpleair/publish-release.yml?logo=github&label=Releases%20Build
+[releases-link]: https://github.com/ptr727/aiopurpleair/releases
+[releaseversion-shield]: https://img.shields.io/github/v/release/ptr727/aiopurpleair?logo=github&label=GitHub%20Release
+
+<!-- Other links -->
+
+[aiohttp-link]: https://github.com/aio-libs/aiohttp
+[bachya-link]: https://github.com/bachya
+[hacorepr-link]: https://github.com/home-assistant/core/pull/140901
+[hapurpleair-link]: https://github.com/ptr727/homeassistant-purpleair
+[hatchling-link]: https://hatch.pypa.io/latest/
+[nbgv-link]: https://github.com/dotnet/Nerdbank.GitVersioning
+[ptr727-link]: https://github.com/ptr727
+[purpleairapi-link]: https://api.purpleair.com/#api-welcome
+[trustedpublishing-link]: https://docs.pypi.org/trusted-publishers/
+[upstream-link]: https://github.com/bachya/aiopurpleair
+[uv-link]: https://github.com/astral-sh/uv
