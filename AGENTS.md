@@ -36,7 +36,7 @@ The library began as the `feat/organization-endpoint-and-error-codes` branch of 
 
 - Don't write `update stuff`, `wip`, or other vague titles. (Dependabot's default `Bump X from Y to Z` titles are fine - keep them.)
 - Don't add `Co-Authored-By:` lines unless the developer explicitly asks.
-- Don't put release-bump magnitude in the title - no "minor", "patch", "release v2026.8.1", etc. Nerdbank.GitVersioning computes the next release version from `version.json` + git history. Dependency versions in dependency-bump titles are fine and expected.
+- Don't put release-bump magnitude in the title - no "minor", "patch", "release v1.0.1", etc. Nerdbank.GitVersioning computes the next release version from `version.json` + git history. Dependency versions in dependency-bump titles are fine and expected.
 - Use US English spelling and match the existing heading style of the file you're editing: title case with lowercase short bind words (a, an, the, and, but, or, of, in, on, at, to, by, for, from); hyphenated compounds capitalize both parts unless the second is a short preposition (*Built-in*, *Read-only*, *24-Hour*).
 
 ### Examples
@@ -63,8 +63,8 @@ Use **US English spelling** in code comments, identifiers, commit messages, PR d
 
 The version is derived by [Nerdbank.GitVersioning][nbgv] (NBGV) from [version.json](version.json) and git history - nothing in the committed working tree carries the real version number.
 
-- [version.json](version.json) holds the CalVer base `2026.8` and the `publicReleaseRefSpec` regex matching `^refs/heads/main$`. NBGV adds the git commit height as the patch component, and on non-public refs (anything not matching `publicReleaseRefSpec`) appends a `-g{sha}` prerelease segment. So `main` produces clean SemVer like `2026.8.5`; `develop` produces prereleases like `2026.8.5-g1a2b3c4`.
-- Bump `version.json`'s base `version` field manually only when opening a new CalVer series. NBGV handles the height component automatically. **Never create manual tags** - the release pipeline creates the tag.
+- [version.json](version.json) holds the SemVer base `1.0` (major.minor) and the `publicReleaseRefSpec` regex matching `^refs/heads/main$`. NBGV adds the git commit height as the patch component, and on non-public refs (anything not matching `publicReleaseRefSpec`) appends a `-g{sha}` prerelease segment. So `main` produces clean SemVer like `1.0.5`; `develop` produces prereleases like `1.0.5-g1a2b3c4`.
+- Bump `version.json`'s base `version` field manually only when opening a new major/minor series (e.g. `1.1` or `2.0`). NBGV handles the patch (height) component automatically. **Never create manual tags** - the release pipeline creates the tag.
 - [`src/aiopurpleair/_version.py`](src/aiopurpleair/_version.py) carries a placeholder `__version__` (the single source hatchling reads). Do not hand-edit it to a real version. [`build-release-task.yml`](.github/workflows/build-release-task.yml) `sed`s the NBGV-computed PEP 440 version into it on the runner before `uv build`, so the published wheel carries the real version while git stays clean. On `develop` the build appends `.dev0` so `pip install --pre` prefers the dev build over the main release.
 
 ## PurpleAir API Reference and Coverage
@@ -77,7 +77,21 @@ PurpleAir does not publish an OpenAPI/Swagger spec; its docs at <https://api.pur
   - Endpoints in [`api.py`](src/aiopurpleair/api.py) / [`endpoints/`](src/aiopurpleair/endpoints/) must map to a spec `paths` entry (path + method). An endpoint the spec lacks is API drift - regenerate first, don't invent it.
   - `SENSOR_FIELDS` in [`const.py`](src/aiopurpleair/const.py) and the [`models/`](src/aiopurpleair/models/) response fields must stay a subset of the spec's `components.schemas.SensorDataFields`. An orphan field (in the code, not the spec) means the spec is stale (regenerate) or the field is wrong.
   - The exception classes and `ERROR_CODE_MAP` in [`errors.py`](src/aiopurpleair/errors.py) should track the spec's `components.schemas.Error` `error` enum.
-- **Known coverage gaps** (against `2026.8`): the Groups API (`/groups*`) and sensor history (`/sensors/{sensor_index}/history[/csv]`) are not yet implemented; keys, organization, and current sensor data are complete. Closing a gap means a new endpoint + models + tests, validated against the spec path it fills.
+- **Known coverage gaps** (against API `1.2.0`): the Groups API (`/groups*`) and sensor history (`/sensors/{sensor_index}/history[/csv]`) are not yet implemented; keys, organization, and current sensor data are complete. Closing a gap means a new endpoint + models + tests, validated against the spec path it fills.
+
+## Live API validation
+
+The default suite is fully mocked (aresponses + syrupy) and hits no network. [`tests/test_live_api.py`](tests/test_live_api.py) is an **opt-in** layer that exercises the client against the real PurpleAir API with real credentials - it validates that the modeled fields, error codes, and organization endpoint still match production, including edge cases the mocks can't prove (e.g. an overdrawn account returning a negative `remaining_points`). It is deselected by default and never runs in CI.
+
+- **Credentials live in `.env.test`** (repo root, gitignored, `chmod 600`) - a dotenv file of real keys that is **never committed or echoed**. [`.env.test.example`](.env.test.example) is the tracked template; copy it and fill in real values. An alternate path can be given via `AIOPURPLEAIR_TEST_ENV`. Keys must never appear in output: parametrized tests use positional ids (`key1`, `key2`), not the raw key.
+- **Run** (both the env flag and credentials are required, else every live test skips):
+
+  ```sh
+  AIOPURPLEAIR_LIVE_TESTS=1 uv run pytest -m live --no-cov -v
+  ```
+
+  Use `--no-cov` because this layer intentionally doesn't drive the 100% coverage gate (that is the mocked suite's job). Omitting the flag or the file leaves the default `uv run pytest` unchanged - live tests skip.
+- **What it checks**: each configured READ key validates via `check_api_key`; the organization endpoint parses for each account (asserting only field *types*, since `remaining_points` may legitimately be negative); and each owned sensor parses when **every** `SENSOR_FIELDS` entry is requested - an unknown field would raise, so a clean parse proves the catalog is a valid subset of the live API. When adding an endpoint or field, extend this file so real data exercises it.
 
 ## PR Review Etiquette
 

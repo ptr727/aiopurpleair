@@ -25,6 +25,10 @@ htmlcov/
 
 # uv keeps its cache outside the tree; uv.lock is committed. Nothing else to ignore here.
 
+# Live-test credentials - real API keys, never committed (.env.test.example is the tracked template)
+.env
+.env.test
+
 # Editor / agent
 .claude
 .codex

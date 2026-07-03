@@ -235,7 +235,7 @@ The distribution name is `ptr727-aiopurpleair` (distinct from the canonical `aio
 **Build process and artifacts**:
 
 - **Package**: a Python wheel + sdist (`ptr727-aiopurpleair`), built with the [hatchling][hatchling-link] backend on a src-layout ([`src/aiopurpleair/`](./src/aiopurpleair/)) and managed with [uv][uv-link].
-- **Versioning**: automatic via [Nerdbank.GitVersioning][nbgv-link] from [`version.json`](./version.json) (`2026.8` base) plus git height; `main` builds a clean stable `X.Y.Z`, `develop` a `X.Y.Z.dev0` prerelease. There is no manual tagging.
+- **Versioning**: automatic via [Nerdbank.GitVersioning][nbgv-link] from [`version.json`](./version.json) (`1.0` base) plus git height; `main` builds a clean stable `X.Y.Z`, `develop` a `X.Y.Z.dev0` prerelease. There is no manual tagging.
 - **Publishing**: releases publish to PyPI over OIDC [Trusted Publishing][trustedpublishing-link] (no stored API token). A shipped-path push to `main` (stable) or `develop` (prerelease), or a manual dispatch, cuts a [GitHub Release][releases-link] and uploads the wheel + sdist to PyPI. See [`WORKFLOW.md`](./WORKFLOW.md) for the complete CI/CD contract.
 
 ## API Reference
