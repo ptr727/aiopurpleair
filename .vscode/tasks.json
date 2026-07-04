@@ -2,82 +2,34 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "ruff: check",
-            "type": "shell",
-            "command": "uv",
-            "args": ["run", "ruff", "check"],
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
-        },
-        {
-            "label": "ruff: format --check",
-            "type": "shell",
-            "command": "uv",
-            "args": ["run", "ruff", "format", "--check"],
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
-        },
-        {
-            "label": "mypy: src (strict)",
-            "type": "shell",
-            "command": "uv",
-            "args": ["run", "mypy", "src"],
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
-        },
-        {
-            "label": "pyright",
-            "type": "shell",
-            "command": "uv",
-            "args": ["run", "pyright"],
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
-        },
-        {
             "label": "Lint: ruff + mypy + pyright (verify)",
-            "dependsOrder": "sequence",
-            "dependsOn": ["ruff: check", "ruff: format --check", "mypy: src (strict)", "pyright"],
+            "type": "shell",
+            "command": "uv run ruff check && uv run ruff format --check && uv run mypy src && uv run pyright",
             "group": { "kind": "build", "isDefault": true },
-            "problemMatcher": []
-        },
-        {
-            "label": "ruff: format",
-            "type": "shell",
-            "command": "uv",
-            "args": ["run", "ruff", "format"],
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
-        },
-        {
-            "label": "ruff: check --fix",
-            "type": "shell",
-            "command": "uv",
-            "args": ["run", "ruff", "check", "--fix"],
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
         },
         {
             "label": "Fix: ruff format + check --fix",
-            "dependsOrder": "sequence",
-            "dependsOn": ["ruff: format", "ruff: check --fix"],
-            "problemMatcher": []
+            "type": "shell",
+            "command": "uv run ruff format && uv run ruff check --fix",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
         },
         {
             "label": "Test: pytest",
             "type": "shell",
-            "command": "uv",
-            "args": ["run", "pytest"],
+            "command": "uv run pytest",
             "group": { "kind": "test", "isDefault": true },
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
         },
         {
             "label": "Test: pytest (update snapshots)",
             "type": "shell",
-            "command": "uv",
-            "args": ["run", "pytest", "--snapshot-update"],
+            "command": "uv run pytest --snapshot-update",
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "dedicated" }
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
         }
     ]
 }
