@@ -110,7 +110,7 @@ class API:
                         payload = cast(dict[str, Any], parsed)
 
                 raise_error(resp, payload, raising_err)
-        except ClientError as err:
+        except (ClientError, TimeoutError) as err:
             # A transport-level failure (DNS, connect, timeout, reset) that never
             # produced a PurpleAir error payload - surface it as a RequestError so
             # callers only ever see this package's exceptions.
