@@ -175,10 +175,10 @@ Full language rules live in [CODESTYLE.md](./CODESTYLE.md) (a General section pl
 - **Docs also have a CI gate** (the `docs` job in [`validate-task.yml`](.github/workflows/validate-task.yml)): `markdownlint` on all `*.md`, `cspell` on `README.md` + `HISTORY.md`, `actionlint`, and `shellcheck`. **Run these locally; don't skip a check or defer it to CI because a tool isn't installed.** `cspell`/`markdownlint-cli2` are Node tools that may be absent - run the same tool via its official Docker image (CI runs these through GitHub Actions, but the images run the identical binaries):
 
   ```sh
-  docker run --rm -v "$PWD:/workdir" ghcr.io/streetsidesoftware/cspell:latest --no-progress --config cspell.json README.md HISTORY.md
-  docker run --rm -v "$PWD:/workdir" davidanson/markdownlint-cli2:latest '**/*.md'
-  docker run --rm -v "$PWD:/workdir" rhysd/actionlint:latest -color
-  docker run --rm -v "$PWD:/workdir" koalaman/shellcheck:latest repo-config/configure.sh
+  docker run --rm -v "$PWD:/workdir" -w /workdir ghcr.io/streetsidesoftware/cspell:latest --no-progress --config cspell.json README.md HISTORY.md
+  docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest '**/*.md'
+  docker run --rm -v "$PWD:/workdir" -w /workdir rhysd/actionlint:latest -color
+  docker run --rm -v "$PWD:/workdir" -w /workdir koalaman/shellcheck:latest repo-config/configure.sh
   ```
 
 ## Bot identity and secrets
