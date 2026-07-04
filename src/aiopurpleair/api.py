@@ -74,7 +74,9 @@ class API:
         """
         url: str = f"{API_URL_BASE}{endpoint}"
 
-        kwargs.setdefault("headers", {})
+        # `or {}` (not setdefault) so an explicit headers=None is replaced with a
+        # mutable dict rather than kept and dereferenced below.
+        kwargs["headers"] = kwargs.get("headers") or {}
         if self._api_key:
             kwargs["headers"]["X-API-Key"] = self._api_key
 
