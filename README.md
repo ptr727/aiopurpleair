@@ -1,16 +1,16 @@
 # aiopurpleair
 
-Async Python client library for the PurpleAir air-quality API, with the organization endpoint and typed error codes.
+Python client library for the PurpleAir air-quality sensors API.
 
 ## Build and Distribution
 
 - **Source Code**: [GitHub][github-link] - Source code, issues, discussions, and CI/CD pipelines.
-- **Versioned Releases**: [GitHub Releases][releases-link] - Version tagged source code and build artifacts.
-- **PyPI Packages**: [PyPI][pypi-link] - Python wheel + sdist published to PyPI.org as `ptr727-aiopurpleair`.
+- **Releases**: [GitHub Releases][releases-link] - Version tagged source code and build artifacts.
+- **PyPI Packages**: [PyPI][pypi-link] - Python library published to PyPI.org as `ptr727-aiopurpleair`.
 
 ### Build Status
 
-[![Releases Build][releasebuildstatus-shield]][actions-link]\
+[![Releases Status][releasebuildstatus-shield]][actions-link]\
 [![Last Commit][lastcommit-shield]][commits-link]
 
 ### Releases
@@ -21,20 +21,25 @@ Async Python client library for the PurpleAir air-quality API, with the organiza
 
 ### Release Notes
 
-Release highlights - see [Release History](./HISTORY.md) for details.
-
 **Version 1.0.0**:
 
-- First release of the independent, standalone library, published to PyPI as `ptr727-aiopurpleair`. It is a maintained continuation (no fork lineage) of the work from the abandoned upstream PR [bachya/aiopurpleair#719][bachya-pr-link]. Requires Python 3.13 or newer; tested on 3.13 and 3.14.
-- **Breaking change** - the API-key check moved from the top-level `api.async_check_api_key()` to the grouped `api.keys.async_check_api_key()`, so keys sit alongside `api.sensors`, `api.organizations`, and `api.groups` for one consistent endpoint-group surface. Update callers to the new path.
-- **New endpoints** - beyond the keys and sensors endpoints of the canonical library, this adds the organization endpoint (`GET /v1/organization`: remaining API points, consumption rate, organization identity), sensor history as JSON or CSV (`GET /v1/sensors/:sensor_index/history[/csv]`), and the complete Groups API (`/v1/groups*`: group and member management, member data, member history CSV) - full coverage of the documented API.
-- **Consistent typed exceptions** - every documented PurpleAir error code maps to a specific `PurpleAirError` subclass (`InvalidApiKeyError`, `PaymentRequiredError`, `GroupNotFoundError`, `RateLimitExceededError`, ...), grouped under `RequestError` / `InvalidApiKeyError` / `InvalidRequestError` so callers can catch broadly or narrowly instead of pattern-matching on `str(err)`.
-- **Reconstructed OpenAPI spec** - PurpleAir publishes no machine-readable schema, so the repo regenerates one from the upstream apiDoc data with a script and validates the client's endpoint, field, and error-code coverage against it (and, opt-in, against the live API).
-- **Typed, timezone-aware models** - responses are typed Pydantic models (with a `py.typed` marker); timestamps parse to explicit-UTC `datetime` objects rather than naive ones.
-- **Modern packaging** - hatchling + uv on a src-layout, automatic NBGV versioning (no manual tags), OIDC Trusted-Publishing releases, a 100% coverage gate, and syrupy snapshot tests.
+**Summary**:
 
-See [GitHub Releases][releases-link] for per-release changes.\
-See [Release History](./HISTORY.md) for historic changes.
+- **Initial release** of the library published as `ptr727-aiopurpleair`, and the continuation of the abandoned upstream PR [bachya/aiopurpleair#719][bachya-pr-link].
+- **New endpoints** added:
+  - Organization (`GET /v1/organization`) to get remaining API points and consumption rate.
+  - Sensor history (`GET /v1/sensors/:sensor_index/history[/csv]`) as JSON or CSV.
+  - Groups (`/v1/groups*`) for group and member management.
+- **Typed exceptions** for every documented PurpleAir error code.
+- **Reconstructed OpenAPI spec** from the upstream apiDoc data with an automated script.
+- **Typed timezone-aware models** parse to explicit-UTC `datetime` objects.
+- **Updated packaging** using hatchling and uv, automatic versioning using NBGV, PyPI OIDC Trusted-Publishing releases, a 100% coverage gate, and syrupy snapshot tests.
+
+> **⚠️ Breaking Changes**:
+>
+> - API-key check moved from `api.async_check_api_key()` to `api.keys.async_check_api_key()`, for association consistency alongside `api.sensors`, `api.organizations`, and `api.groups`.
+
+See [Release History](./HISTORY.md) for complete release notes and older versions.
 
 ## Getting Started
 
@@ -308,7 +313,7 @@ pip install ptr727-aiopurpleair
 import aiopurpleair
 ```
 
-The distribution name is `ptr727-aiopurpleair` (distinct from the canonical `aiopurpleair` on PyPI); the import path is unchanged. aiopurpleair supports Python 3.13 and 3.14, and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
+The distribution name is `ptr727-aiopurpleair`. aiopurpleair supports Python 3.13 and 3.14, and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
 
 ## Questions or Issues
 
@@ -372,8 +377,8 @@ The import package name is `aiopurpleair`; the distribution name `ptr727-aiopurp
 Licensed under the [MIT License][license-link]\
 ![GitHub License][license-shield]
 
-- Original `aiopurpleair` author: Aaron Bach ([@bachya][bachya-link]).
 - Current maintainer: Pieter Viljoen ([@ptr727][ptr727-link]).
+- Original `aiopurpleair` author: Aaron Bach ([@bachya][bachya-link]).
 
 <!-- Shields links -->
 
