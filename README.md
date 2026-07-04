@@ -10,7 +10,7 @@ Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
 
 ### Build Status
 
-[![Build Status][releasebuildstatus-shield]][actions-link]\
+[![Build Status][buildstatus-shield]][actions-link]\
 [![Last Commit][lastcommit-shield]][commits-link]\
 [![Coverage][coverage-shield]][coverage-link]
 
@@ -24,8 +24,6 @@ Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
 
 **Version 1.0.0**:
 
-**Summary**:
-
 - Initial release of the library published as `ptr727-aiopurpleair`, and the continuation of the abandoned upstream PR [bachya/aiopurpleair#719][bachya-pr-link].
 - New endpoints added:
   - Organization (`GET /v1/organization`) to get remaining API points and consumption rate.
@@ -35,10 +33,7 @@ Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
 - Reconstructed OpenAPI spec from the upstream apiDoc data with an automated script.
 - Typed timezone-aware models parse to explicit-UTC `datetime` objects.
 - Updated packaging using hatchling and uv, automatic versioning using NBGV, PyPI OIDC Trusted-Publishing releases, a 100% coverage gate, and syrupy snapshot tests.
-
-> **⚠️ Breaking Changes**:
->
-> - API-key check moved from `api.async_check_api_key()` to `api.keys.async_check_api_key()`, for association consistency alongside `api.sensors`, `api.organizations`, and `api.groups`.
+- ⚠️ API-key check moved from `api.async_check_api_key()` to `api.keys.async_check_api_key()`. Maintains association consistency alongside `api.sensors`, `api.organizations`, and `api.groups`.
 
 See [Release History](./HISTORY.md) for complete release notes and older versions.
 
@@ -363,7 +358,7 @@ The generator takes the API version from the docs' changelog (the apiDoc build-m
 ## Credits
 
 This library is an independent implementation based on the [bachya/aiopurpleair][bachya-aiopurpleair-link] PurpleAir API client by Aaron Bach ([@bachya][bachya-link]).\
-It was created to be maintained independently after the upstream PR [bachya/aiopurpleair#719][bachya-pr-link] adding organization support was abandoned.
+It was created to be maintained independently after the upstream PR [bachya/aiopurpleair#719][bachya-pr-link] - adding organization support - was abandoned.
 
 The original MIT copyright is retained alongside the current maintainer's in [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
 
@@ -387,7 +382,7 @@ Licensed under the [MIT License][license-link] and [NOTICE](./NOTICE)\
 [prereleaseversion-shield]: https://img.shields.io/github/v/release/ptr727/aiopurpleair?include_prereleases&filter=*-g*&label=GitHub%20Pre-Release&logo=github
 [pypi-link]: https://pypi.org/project/ptr727-aiopurpleair/
 [pypireleaseversion-shield]: https://img.shields.io/pypi/v/ptr727-aiopurpleair?logo=pypi&label=PyPI%20Release
-[releasebuildstatus-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/aiopurpleair/publish-release.yml?logo=github&label=Releases%20Build
+[buildstatus-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/aiopurpleair/test-pull-request.yml?logo=github&label=Build%20Status
 [releases-link]: https://github.com/ptr727/aiopurpleair/releases
 [releaseversion-shield]: https://img.shields.io/github/v/release/ptr727/aiopurpleair?logo=github&label=GitHub%20Release
 
