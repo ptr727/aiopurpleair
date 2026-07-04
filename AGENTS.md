@@ -8,6 +8,10 @@ An async Python client library for the [PurpleAir][purpleair] air-quality API, p
 
 The library began as the `feat/organization-endpoint-and-error-codes` branch of a fork of [bachya/aiopurpleair][upstream] by Aaron Bach. Those additions were proposed upstream and later abandoned; the library is now independently maintained here. It is **MIT-licensed with dual copyright** - original © 2024 Aaron Bach, current © 2026 Pieter Viljoen - retained in [LICENSE](LICENSE) and [NOTICE](NOTICE). The primary consumer is the [`homeassistant-purpleair`][ha-purpleair] HACS integration.
 
+## Supported development platforms
+
+Development runs cross-platform on **Linux, macOS, and Windows**. The toolchain is entirely `uv run` (ruff, mypy, pyright, pytest), which behaves identically on every OS, and there are no bash dev scripts; the VS Code tasks in [.vscode/tasks.json](.vscode/tasks.json) wrap the same `uv run` commands. (The consuming [`homeassistant-purpleair`][ha-purpleair] integration is Linux-only because Home Assistant Core doesn't run on Windows natively - that constraint does not apply to this library.)
+
 ## Branches and merging
 
 - Pipeline is `feature -> develop -> main`. Both `develop` and `main` are protected; everything lands via PR.
