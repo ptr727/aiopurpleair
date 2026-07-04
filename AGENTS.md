@@ -10,7 +10,7 @@ The library began as the `feat/organization-endpoint-and-error-codes` branch of 
 
 ## Supported development platforms
 
-Development runs cross-platform on **Linux, macOS, and Windows**. The toolchain is entirely `uv run` (ruff, mypy, pyright, pytest), which behaves identically on every OS, and there are no bash dev scripts; the VS Code tasks in [.vscode/tasks.json](.vscode/tasks.json) wrap the same `uv run` commands. (The consuming [`homeassistant-purpleair`][ha-purpleair] integration is Linux-only because Home Assistant Core doesn't run on Windows natively - that constraint does not apply to this library.)
+Development runs cross-platform on **Linux, macOS, and Windows**. The toolchain is entirely `uv run` (ruff, mypy, pyright, pytest), which behaves identically on every OS, and the dev loop has no bash scripts (the only shell script, [`repo-config/configure.sh`](repo-config/configure.sh), is for repo administration, not development); the VS Code tasks in [.vscode/tasks.json](.vscode/tasks.json) wrap the same `uv run` commands. (The consuming [`homeassistant-purpleair`][ha-purpleair] integration is Linux-only because Home Assistant Core doesn't run on Windows natively - that constraint does not apply to this library.)
 
 ## Branches and merging
 
