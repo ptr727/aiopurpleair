@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any, cast
 
-from aiohttp import ClientResponse, ClientSession, ClientTimeout
+from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from pydantic import ValidationError
 
@@ -52,13 +52,13 @@ class API:
         method: str,
         endpoint: str,
         **kwargs: Any,
-    ) -> tuple[ClientResponse, str]:
+    ) -> str:
         """Send an HTTP request and raise the appropriate PurpleAir error.
 
         This is the shared transport for the JSON, text (CSV), and empty (204)
         response wrappers. It reads the body as text (so non-JSON responses like
         CSV are supported), raises for a PurpleAir error payload, and returns the
-        response together with the raw body text.
+        raw body text.
 
         Args:
             method: An HTTP method.
@@ -66,10 +66,11 @@ class API:
             **kwargs: Additional kwargs to send with the request.
 
         Returns:
-            A tuple of the aiohttp response and the raw body text.
+            The raw response body text.
 
         Raises:
-            RequestError: Raised on an HTTP error with no PurpleAir error payload.
+            RequestError: Raised on an HTTP or connection error that carries no
+                PurpleAir error payload.
         """
         url: str = f"{API_URL_BASE}{endpoint}"
 
@@ -107,11 +108,16 @@ class API:
                         payload = cast(dict[str, Any], parsed)
 
                 raise_error(resp, payload, raising_err)
+        except ClientError as err:
+            # A transport-level failure (DNS, connect, timeout, reset) that never
+            # produced a PurpleAir error payload - surface it as a RequestError so
+            # callers only ever see this package's exceptions.
+            raise RequestError(f"HTTP error requesting {endpoint}: {err}") from err
         finally:
             if not use_running_session:
                 await session.close()
 
-        return resp, text
+        return text
 
     async def async_request(
         self,
@@ -134,9 +140,13 @@ class API:
         Raises:
             RequestError: Raised when response data can't be validated.
         """
-        _, text = await self._async_send(method, endpoint, **kwargs)
+        text = await self._async_send(method, endpoint, **kwargs)
 
-        data = json.loads(text)
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as err:
+            raise RequestError(f"Non-JSON response from {endpoint}: {err}") from err
+
         LOGGER.debug("Data received for %s: %s", endpoint, data)
 
         try:
@@ -163,8 +173,7 @@ class API:
         Returns:
             The raw response body as a string.
         """
-        _, text = await self._async_send(method, endpoint, **kwargs)
-        return text
+        return await self._async_send(method, endpoint, **kwargs)
 
     async def async_request_none(
         self,

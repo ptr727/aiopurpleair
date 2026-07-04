@@ -408,7 +408,7 @@ async def test_get_sensor_history_csv(aresponses: ResponsesMockServer) -> None:
         "api.purpleair.com",
         "/v1/sensors/12345/history/csv",
         "get",
-        response=aresponses.Response(status=200, text=csv, content_type="text/csv"),
+        response=aiohttp.web_response.Response(status=200, text=csv, content_type="text/csv"),
     )
 
     async with aiohttp.ClientSession() as session:

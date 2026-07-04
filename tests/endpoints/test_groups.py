@@ -108,7 +108,7 @@ async def test_delete_group(aresponses: ResponsesMockServer) -> None:
         "api.purpleair.com",
         "/v1/groups/1234",
         "delete",
-        response=aresponses.Response(status=204, text=""),
+        response=aiohttp.web_response.Response(status=204, text=""),
     )
 
     async with aiohttp.ClientSession() as session:
@@ -163,7 +163,7 @@ async def test_delete_member(aresponses: ResponsesMockServer) -> None:
         "api.purpleair.com",
         "/v1/groups/1234/members/5678",
         "delete",
-        response=aresponses.Response(status=204, text=""),
+        response=aiohttp.web_response.Response(status=204, text=""),
     )
 
     async with aiohttp.ClientSession() as session:
@@ -248,7 +248,7 @@ async def test_get_member_history_csv(aresponses: ResponsesMockServer) -> None:
         "api.purpleair.com",
         "/v1/groups/1234/members/5678/history/csv",
         "get",
-        response=aresponses.Response(status=200, text=csv, content_type="text/csv"),
+        response=aiohttp.web_response.Response(status=200, text=csv, content_type="text/csv"),
     )
 
     async with aiohttp.ClientSession() as session:

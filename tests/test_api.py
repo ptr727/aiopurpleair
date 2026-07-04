@@ -308,6 +308,48 @@ async def test_check_api_key_validation_error(aresponses: ResponsesMockServer) -
     aresponses.assert_plan_strictly_followed()
 
 
+@pytest.mark.asyncio
+async def test_async_request_non_json_body(aresponses: ResponsesMockServer) -> None:
+    """A 2xx response with a non-JSON body raises RequestError, not a raw JSONDecodeError.
+
+    Args:
+        aresponses: An aresponses server.
+    """
+    aresponses.add(
+        "api.purpleair.com",
+        "/v1/keys",
+        "get",
+        response=aiohttp.web_response.Response(status=200, text="<html>not json</html>", content_type="text/html"),
+    )
+
+    async with aiohttp.ClientSession() as session:
+        api = API(TEST_API_KEY, session=session)
+        with pytest.raises(RequestError) as err:
+            await api.async_request("get", "/keys", GetKeysResponse)
+        assert "Non-JSON response" in str(err.value)
+
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.asyncio
+async def test_async_request_wraps_connection_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A transport-level ClientError is surfaced as a RequestError.
+
+    Args:
+        monkeypatch: The pytest monkeypatch fixture.
+    """
+
+    def boom(*_args: object, **_kwargs: object) -> object:
+        raise aiohttp.ClientConnectionError("no route to host")
+
+    monkeypatch.setattr(aiohttp.ClientSession, "request", boom)
+
+    api = API(TEST_API_KEY)
+    with pytest.raises(RequestError) as err:
+        await api.async_request("get", "/keys", GetKeysResponse)
+    assert "HTTP error requesting" in str(err.value)
+
+
 def test_get_map_url() -> None:
     """Test getting the map URL for a sensor index."""
     api = API(TEST_API_KEY)
