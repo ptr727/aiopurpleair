@@ -9,7 +9,7 @@ This repository is an independent continuation of that library. It began as the
 `feat/organization-endpoint-and-error-codes` branch of a fork, adding a
 `GET /v1/organization` endpoint and a typed exception hierarchy mapped from the
 PurpleAir API's documented error codes. Two upstream contributions related to
-this work were abandoned after the upstream maintainer became unresponsive:
+this work were abandoned:
 
   - The additions above, proposed against bachya/aiopurpleair as pull request
     #719 (https://github.com/bachya/aiopurpleair/pull/719), were not merged; they

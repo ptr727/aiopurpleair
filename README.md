@@ -25,7 +25,7 @@ Release highlights - see [Release History](./HISTORY.md) for details.
 
 **Version 1.0.0**:
 
-- First release of the independent, standalone library, published to PyPI as `ptr727-aiopurpleair`. It is a maintained continuation (no fork lineage) of the work from the now-closed upstream PR [bachya/aiopurpleair#719][bachya-pr-link]. Requires Python 3.13 or newer; tested on 3.13 and 3.14.
+- First release of the independent, standalone library, published to PyPI as `ptr727-aiopurpleair`. It is a maintained continuation (no fork lineage) of the work from the abandoned upstream PR [bachya/aiopurpleair#719][bachya-pr-link]. Requires Python 3.13 or newer; tested on 3.13 and 3.14.
 - **Breaking change** - the API-key check moved from the top-level `api.async_check_api_key()` to the grouped `api.keys.async_check_api_key()`, so keys sit alongside `api.sensors`, `api.organizations`, and `api.groups` for one consistent endpoint-group surface. Update callers to the new path.
 - **New endpoints** - beyond the keys and sensors endpoints of the canonical library, this adds the organization endpoint (`GET /v1/organization`: remaining API points, consumption rate, organization identity), sensor history as JSON or CSV (`GET /v1/sensors/:sensor_index/history[/csv]`), and the complete Groups API (`/v1/groups*`: group and member management, member data, member history CSV) - full coverage of the documented API.
 - **Consistent typed exceptions** - every documented PurpleAir error code maps to a specific `PurpleAirError` subclass (`InvalidApiKeyError`, `PaymentRequiredError`, `GroupNotFoundError`, `RateLimitExceededError`, ...), grouped under `RequestError` / `InvalidApiKeyError` / `InvalidRequestError` so callers can catch broadly or narrowly instead of pattern-matching on `str(err)`.
@@ -360,9 +360,9 @@ The generator takes the API version from the docs' changelog (the apiDoc build-m
 
 ## Origin
 
-aiopurpleair is an independent, MIT-licensed continuation of the [bachya/aiopurpleair][upstream-link] PurpleAir API client. Its distinguishing capabilities originated in two upstream contributions that were abandoned after the upstream maintainers became unresponsive:
+aiopurpleair is an independent, MIT-licensed continuation of the [bachya/aiopurpleair][upstream-link] PurpleAir API client. Its distinguishing capabilities originated in two upstream contributions that were abandoned:
 
-- A pull request against bachya/aiopurpleair adding the organization endpoint and typed error codes ([bachya/aiopurpleair#719][bachya-pr-link]), which was closed unmerged.
+- A pull request against bachya/aiopurpleair adding the organization endpoint and typed error codes ([bachya/aiopurpleair#719][bachya-pr-link]), since abandoned.
 - A PurpleAir integration proposed for Home Assistant core as [home-assistant/core#140901][hacorepr-link], now maintained separately as the [`homeassistant-purpleair`][hapurpleair-link] HACS custom integration, this library's primary consumer.
 
 The import package name is `aiopurpleair`; the distribution name `ptr727-aiopurpleair` keeps it distinct from the canonical `aiopurpleair` on PyPI. The original MIT copyright is retained alongside the current maintainer's in [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
