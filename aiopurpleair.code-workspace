@@ -5,10 +5,9 @@
         }
     ],
     "settings": {
-        // Interpreter: the uv-managed virtual environment. This repo's .venv is a
-        // Linux/WSL venv (.venv/bin/python); the Python extension also auto-detects
-        // .venv, so a Windows checkout (.venv/Scripts) still resolves.
-        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        // Interpreter: the uv-managed .venv. Not hard-coded here - the Python
+        // extension auto-detects .venv on every OS (.venv/bin on POSIX,
+        // .venv/Scripts on Windows).
         "python.terminal.activateEnvironment": true,
         "python.languageServer": "Pylance",
         // Pylance mirrors [tool.pyright] in pyproject.toml (standard base, strict on src).
