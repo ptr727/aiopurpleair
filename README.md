@@ -360,7 +360,7 @@ The generator takes the API version from the docs' changelog (the apiDoc build-m
 This library is an independent implementation based on the [bachya/aiopurpleair][bachya-aiopurpleair-link] PurpleAir API client by Aaron Bach ([@bachya][bachya-link]).\
 It was created to be maintained independently after the upstream PR [bachya/aiopurpleair#719][bachya-pr-link] - adding organization support - was abandoned.
 
-The original MIT copyright is retained alongside the current maintainer's in [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
+The original MIT copyright is retained alongside that of the current maintainer in [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
 
 ## License
 

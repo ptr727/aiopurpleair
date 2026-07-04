@@ -10,5 +10,5 @@ The import package name remains `aiopurpleair`; the distribution
 name `ptr727-aiopurpleair` keeps it distinct from the original `aiopurpleair`
 distribution on PyPI.
 
-The original MIT copyright notice is retained in LICENSE alongside the current
-maintainer's.
+The original MIT copyright notice is retained in LICENSE alongside that of the current
+maintainer.
