@@ -11,7 +11,6 @@ Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
 ### Build Status
 
 [![Build Status][releasebuildstatus-shield]][actions-link]\
-[![Last Build][lastbuild-shield]][actions-link]\
 [![Last Commit][lastcommit-shield]][commits-link]\
 [![Coverage][coverage-shield]][coverage-link]
 
@@ -382,7 +381,6 @@ Licensed under the [MIT License][license-link] and [NOTICE](./NOTICE)\
 [discussions-link]: https://github.com/ptr727/aiopurpleair/discussions
 [github-link]: https://github.com/ptr727/aiopurpleair
 [issues-link]: https://github.com/ptr727/aiopurpleair/issues
-[lastbuild-shield]: https://byob.yarr.is/ptr727/aiopurpleair/lastbuild
 [lastcommit-shield]: https://img.shields.io/github/last-commit/ptr727/aiopurpleair?logo=github&label=Last%20Commit
 [license-link]: ./LICENSE
 [license-shield]: https://img.shields.io/github/license/ptr727/aiopurpleair?label=License
