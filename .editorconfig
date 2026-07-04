@@ -1,17 +1,30 @@
 # https://editorconfig.org
 
+# Root config
 root = true
 
+# Defaults - CRLF by default so files are correct on both Windows and Linux (LF-only
+# confuses Windows tooling); only execution-sensitive scripts are pinned to LF below.
 [*]
 charset = utf-8
-end_of_line = lf
+end_of_line = crlf
 indent_size = 4
 indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+# Markdown files - trailing whitespace is significant (hard line breaks)
+[*.md]
+trim_trailing_whitespace = false
+
+# YAML files
 [*.{yml,yaml}]
 indent_size = 2
 
-[*.md]
-trim_trailing_whitespace = false
+# Shell scripts must stay LF - a CRLF shebang breaks execution on Linux. Covers
+# both *.sh and the executables in scripts/ (matched by no extension rule).
+[*.sh]
+end_of_line = lf
+
+[scripts/*]
+end_of_line = lf

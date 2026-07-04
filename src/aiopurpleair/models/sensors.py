@@ -246,6 +246,67 @@ class GetSensorResponse(PurpleAirBaseModel):
     validate_timestamp_utc = field_validator("timestamp_utc", mode="before")(validate_timestamp)
 
 
+class GetSensorHistoryRequest(PurpleAirBaseModel):
+    """Define a request to GET /v1/sensors/:sensor_index/history[/csv]."""
+
+    fields: str
+
+    read_key: str | None = None
+    start_timestamp: int | None = None
+    end_timestamp: int | None = None
+    average: int | None = None
+
+    validate_fields = field_validator("fields", mode="before")(validate_fields_request)
+
+    @field_validator("start_timestamp", "end_timestamp", mode="before")
+    @classmethod
+    def validate_timestamps(cls, value: datetime) -> int:
+        """Validate a history window boundary datetime.
+
+        Args:
+            value: A datetime object (in UTC).
+
+        Returns:
+            The epoch timestamp of the datetime object.
+        """
+        return round(utc_to_timestamp(value))
+
+
+class GetSensorHistoryResponse(PurpleAirBaseModel):
+    """Define a response to GET /v1/sensors/:sensor_index/history."""
+
+    api_version: str
+    sensor_index: int
+    average: int
+    fields: list[str]
+    data: list[dict[str, Any]]
+
+    private: bool | None = None
+    timestamp_utc: datetime = Field(alias="time_stamp")
+    start_timestamp_utc: datetime = Field(alias="start_timestamp")
+    end_timestamp_utc: datetime = Field(alias="end_timestamp")
+
+    @model_validator(mode="before")
+    @classmethod
+    def build_data(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """Zip each history row into a ``{field: value}`` mapping.
+
+        Args:
+            values: The response payload.
+
+        Returns:
+            The response payload with ``data`` reshaped into per-row mappings.
+        """
+        values["data"] = [dict(zip(values["fields"], row, strict=True)) for row in values["data"]]
+        return values
+
+    validate_timestamp_utc = field_validator("timestamp_utc", mode="before")(validate_timestamp)
+
+    validate_start_timestamp_utc = field_validator("start_timestamp_utc", mode="before")(validate_timestamp)
+
+    validate_end_timestamp_utc = field_validator("end_timestamp_utc", mode="before")(validate_timestamp)
+
+
 class GetSensorsRequest(PurpleAirBaseModel):
     """Define a request to GET /v1/sensors."""
 
@@ -375,9 +436,7 @@ class GetSensorsResponse(PurpleAirBaseModel):
                 raise ValueError(f"{field} is an unknown field")
 
         values["data"] = {
-            sensor_values[0]: SensorModel.model_validate(
-                dict(zip(values["fields"], sensor_values))  # noqa: B905
-            )
+            sensor_values[0]: SensorModel.model_validate(dict(zip(values["fields"], sensor_values, strict=True)))
             for sensor_values in values["data"]
         }
 
