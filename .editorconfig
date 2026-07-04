@@ -21,6 +21,10 @@ trim_trailing_whitespace = false
 [*.{yml,yaml}]
 indent_size = 2
 
-# Shell scripts must stay LF - a CRLF shebang breaks execution on Linux
+# Shell scripts must stay LF - a CRLF shebang breaks execution on Linux. Covers
+# both *.sh and the executables in scripts/ (matched by no extension rule).
 [*.sh]
+end_of_line = lf
+
+[scripts/*]
 end_of_line = lf
