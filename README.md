@@ -92,7 +92,7 @@ import aiopurpleair
 
 **Dependencies**:
 
-Supports Python 3.13 and 3.14, and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
+Requires Python 3.13 or later (tested on 3.13 and 3.14), and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
 
 ## Getting Started
 
