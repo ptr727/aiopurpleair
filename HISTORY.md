@@ -1,12 +1,12 @@
-# aiopurpleair - Release History
+# PurpleAir Library
 
-Curated highlights of what's shipped. The canonical per-version release ledger (with auto-generated PR/commit detail and downloadable artifacts) is the [GitHub Releases][releases-link] page, and every version is on [PyPI][pypi-link]; this file just summarizes the headline features that landed in each milestone. It is end-user release notes - what changed and what to expect after upgrading - not a design log.
+Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
 
 ## Release History
 
 - **Version 1.0.0**:
   - **Summary**:
-    - **Initial release** of the independent, standalone library published as `ptr727-aiopurpleair`, a maintained continuation (no fork lineage) of the work from the abandoned upstream PR [bachya/aiopurpleair#719](https://github.com/bachya/aiopurpleair/pull/719). Requires Python 3.13 or newer; tested on 3.13 and 3.14.
+    - **Initial release** of the independent, standalone library published as `ptr727-aiopurpleair`, a maintained continuation (no fork lineage) of the work from the abandoned upstream PR [bachya/aiopurpleair#719][bachya-pr-link]. Requires Python 3.13 or newer; tested on 3.13 and 3.14.
     - **New endpoints** beyond the canonical library's keys and sensors, covering all 11 documented API paths:
       - Organization (`GET /v1/organization`) - the account's remaining API points, consumption rate, and organization identity.
       - Sensor history (`GET /v1/sensors/:sensor_index/history[/csv]`) - a historical time series as parsed JSON or raw CSV.
@@ -20,5 +20,5 @@ Curated highlights of what's shipped. The canonical per-version release ledger (
   - **Breaking changes**:
     - The API-key check moved from the top-level `api.async_check_api_key()` to the grouped `api.keys.async_check_api_key()`, for consistency with `api.sensors` / `api.organizations` / `api.groups`. Update callers to the new path.
 
-[pypi-link]: https://pypi.org/project/ptr727-aiopurpleair/
-[releases-link]: https://github.com/ptr727/aiopurpleair/releases
+[bachya-pr-link]: https://github.com/bachya/aiopurpleair/pull/719
+[purpleair-link]: https://www.purpleair.com/
