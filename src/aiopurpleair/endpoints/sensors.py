@@ -212,8 +212,8 @@ class SensorsEndpoints(APIEndpointsBase):
         center = GeoLocation.from_degrees(latitude, longitude)
         nw_coordinate_pair, se_coordinate_pair = center.bounding_box(distance_km)
 
-        # Ensure that latitude and longitude are included in the fields no matter what:
-        fields.extend(field for field in ("latitude", "longitude") if field not in fields)
+        # Ensure latitude and longitude are included, without mutating the caller's list:
+        fields = [*fields, *(field for field in ("latitude", "longitude") if field not in fields)]
 
         sensors_response = await self.async_get_sensors(
             fields,
