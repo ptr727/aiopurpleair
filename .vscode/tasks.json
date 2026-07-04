@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Lint: ruff + mypy + pyright (verify)",
+            "type": "shell",
+            "command": "uv run ruff check && uv run ruff format --check && uv run mypy src && uv run pyright",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+        },
+        {
+            "label": "Fix: ruff format + check --fix",
+            "type": "shell",
+            "command": "uv run ruff format && uv run ruff check --fix",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+        },
+        {
+            "label": "Test: pytest",
+            "type": "shell",
+            "command": "uv run pytest",
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+        },
+        {
+            "label": "Test: pytest (update snapshots)",
+            "type": "shell",
+            "command": "uv run pytest --snapshot-update",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+        }
+    ]
+}

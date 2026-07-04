@@ -8,6 +8,10 @@ An async Python client library for the [PurpleAir][purpleair] air-quality API, p
 
 The library began as the `feat/organization-endpoint-and-error-codes` branch of a fork of [bachya/aiopurpleair][upstream] by Aaron Bach. Those additions were proposed upstream and later abandoned; the library is now independently maintained here. It is **MIT-licensed with dual copyright** - original © 2024 Aaron Bach, current © 2026 Pieter Viljoen - retained in [LICENSE](LICENSE) and [NOTICE](NOTICE). The primary consumer is the [`homeassistant-purpleair`][ha-purpleair] HACS integration.
 
+## Supported development platforms
+
+Development runs cross-platform on **Linux, macOS, and Windows**. The toolchain is entirely `uv run` (ruff, mypy, pyright, pytest), which behaves identically on every OS, and the dev loop has no bash scripts (the only shell script, [`repo-config/configure.sh`](repo-config/configure.sh), is for repo administration, not development); the VS Code tasks in [.vscode/tasks.json](.vscode/tasks.json) wrap the same `uv run` commands. (The consuming [`homeassistant-purpleair`][ha-purpleair] integration is Linux-only because Home Assistant Core doesn't run on Windows natively - that constraint does not apply to this library.)
+
 ## Branches and merging
 
 - Pipeline is `feature -> develop -> main`. Both `develop` and `main` are protected; everything lands via PR.
@@ -172,6 +176,14 @@ Full language rules live in [CODESTYLE.md](./CODESTYLE.md) (a General section pl
 - **Tools target the 3.13 floor** (`target-version = "py313"`, `python_version = "3.13"`, `pythonVersion = "3.13"`), so 3.13 compatibility is statically enforced, while CI's pytest matrix exercises both **3.13 and 3.14**.
 - **Snapshot tests use [syrupy][syrupy].** Regenerate them with `uv run pytest --snapshot-update` only when a response model changes intentionally; review the snapshot diff like any other code.
 - Run the lint set plus `uv run pytest` before pushing - `ruff` alone does not cover `mypy` or `pyright`, both of which are CI gates.
+- **Docs also have a CI gate** (the `docs` job in [`validate-task.yml`](.github/workflows/validate-task.yml)): `markdownlint` on all `*.md`, `cspell` on `README.md` + `HISTORY.md`, `actionlint`, and `shellcheck`. **Run these locally; don't skip a check or defer it to CI because a tool isn't installed.** `cspell`/`markdownlint-cli2` are Node tools that may be absent - run the same tool via its official Docker image (CI runs these through GitHub Actions, but the images run the identical binaries):
+
+  ```sh
+  docker run --rm -v "$PWD:/workdir" -w /workdir ghcr.io/streetsidesoftware/cspell:latest --no-progress --config cspell.json README.md HISTORY.md
+  docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest '**/*.md'
+  docker run --rm -v "$PWD:/workdir" -w /workdir rhysd/actionlint:latest -color
+  docker run --rm -v "$PWD:/workdir" -w /workdir koalaman/shellcheck:latest repo-config/configure.sh
+  ```
 
 ## Bot identity and secrets
 
