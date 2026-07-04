@@ -22,7 +22,7 @@ Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
 
 ### Release Notes
 
-**Version 1.0.0**:
+**Version 1.0**:
 
 - Initial release of the library published as `ptr727-aiopurpleair`, and the continuation of the abandoned upstream PR [bachya/aiopurpleair#719][bachya-pr-link].
 - New endpoints added:

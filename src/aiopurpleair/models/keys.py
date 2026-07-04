@@ -30,11 +30,11 @@ class GetKeysResponse(PurpleAirBaseModel):
 
     @field_validator("api_key_type", mode="before")
     @classmethod
-    def validate_api_key_type(cls, value: str) -> ApiKeyType:
+    def validate_api_key_type(cls, value: str | ApiKeyType) -> ApiKeyType:
         """Validate the API key type.
 
         Args:
-            value: An API key to validate.
+            value: The raw API key type value to validate.
 
         Returns:
             A parsed ApiKeyType.

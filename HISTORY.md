@@ -4,7 +4,7 @@ Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
 
 ## Release History
 
-- **Version 1.0.0**:
+- **Version 1.0**:
   - **Initial release** of the independent, standalone library published as `ptr727-aiopurpleair`, a maintained continuation (no fork lineage) of the work from the abandoned upstream PR [bachya/aiopurpleair#719][bachya-pr-link]. Requires Python 3.13 or newer; tested on 3.13 and 3.14.
   - **New endpoints** beyond the canonical library's keys and sensors, covering all 11 documented API paths:
     - Organization (`GET /v1/organization`) - the account's remaining API points, consumption rate, and organization identity.
