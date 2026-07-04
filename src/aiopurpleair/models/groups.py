@@ -170,9 +170,7 @@ class GetMembersResponse(PurpleAirBaseModel):
                 raise ValueError(f"{field} is an unknown field")
 
         values["data"] = {
-            sensor_values[0]: SensorModel.model_validate(
-                dict(zip(values["fields"], sensor_values, strict=True))
-            )
+            sensor_values[0]: SensorModel.model_validate(dict(zip(values["fields"], sensor_values, strict=True)))
             for sensor_values in values["data"]
         }
         return values

@@ -297,10 +297,7 @@ class GetSensorHistoryResponse(PurpleAirBaseModel):
         Returns:
             The response payload with ``data`` reshaped into per-row mappings.
         """
-        values["data"] = [
-            dict(zip(values["fields"], row, strict=True))
-            for row in values["data"]
-        ]
+        values["data"] = [dict(zip(values["fields"], row, strict=True)) for row in values["data"]]
         return values
 
     validate_timestamp_utc = field_validator("timestamp_utc", mode="before")(validate_timestamp)
@@ -439,9 +436,7 @@ class GetSensorsResponse(PurpleAirBaseModel):
                 raise ValueError(f"{field} is an unknown field")
 
         values["data"] = {
-            sensor_values[0]: SensorModel.model_validate(
-                dict(zip(values["fields"], sensor_values, strict=True))
-            )
+            sensor_values[0]: SensorModel.model_validate(dict(zip(values["fields"], sensor_values, strict=True)))
             for sensor_values in values["data"]
         }
 
