@@ -298,7 +298,7 @@ class GetSensorHistoryResponse(PurpleAirBaseModel):
             The response payload with ``data`` reshaped into per-row mappings.
         """
         values["data"] = [
-            dict(zip(values["fields"], row))  # noqa: B905
+            dict(zip(values["fields"], row, strict=True))
             for row in values["data"]
         ]
         return values
@@ -440,7 +440,7 @@ class GetSensorsResponse(PurpleAirBaseModel):
 
         values["data"] = {
             sensor_values[0]: SensorModel.model_validate(
-                dict(zip(values["fields"], sensor_values))  # noqa: B905
+                dict(zip(values["fields"], sensor_values, strict=True))
             )
             for sensor_values in values["data"]
         }

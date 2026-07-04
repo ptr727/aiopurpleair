@@ -171,7 +171,7 @@ class GetMembersResponse(PurpleAirBaseModel):
 
         values["data"] = {
             sensor_values[0]: SensorModel.model_validate(
-                dict(zip(values["fields"], sensor_values))  # noqa: B905
+                dict(zip(values["fields"], sensor_values, strict=True))
             )
             for sensor_values in values["data"]
         }
