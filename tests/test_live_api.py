@@ -18,6 +18,7 @@ import os
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -201,7 +202,9 @@ async def test_live_groups_roundtrip() -> None:
     """
     write_api = API(_WRITE_KEY)
     read_api = API(_PRIMARY_KEY)
-    created = await write_api.groups.async_create_group("aiopurpleair-live-test")
+    # Unique per run so a leftover from a hard-killed prior run (one that skipped
+    # the finally cleanup) neither collides nor is mistaken for this run's group.
+    created = await write_api.groups.async_create_group(f"aiopurpleair-live-test-{uuid4().hex[:8]}")
     group_id = created.group_id
     try:
         assert group_id
