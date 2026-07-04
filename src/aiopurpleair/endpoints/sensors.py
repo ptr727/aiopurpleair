@@ -37,7 +37,7 @@ class SensorsEndpoints(APIEndpointsBase):
         fields: list[str] | None = None,
         read_key: str | None = None,
     ) -> GetSensorResponse:
-        """Get all sensors.
+        """Get a single sensor by index.
 
         Args:
             sensor_index: The sensor index to get data for.

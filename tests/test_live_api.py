@@ -217,16 +217,17 @@ async def test_live_groups_roundtrip() -> None:
             pytest.skip("the new group did not propagate to the member endpoint in time")
         try:
             # The member reads are eventually consistent too, so poll through the
-            # transient GroupNotFoundError before asserting.
+            # transient GroupNotFoundError. If they never settle, skip rather than
+            # pass vacuously (the endpoints are still exercised by the mocked suite).
             member = await _read_when_ready(
                 lambda: read_api.groups.async_get_member(group_id, member_id, fields=["name"])
             )
-            if member is not None:
-                assert member.member_id == member_id
-                assert member.sensor.sensor_index == sensor_index
             members = await _read_when_ready(lambda: read_api.groups.async_get_members(group_id, ["name"]))
-            if members is not None:
-                assert members.group_id == group_id
+            if member is None or members is None:
+                pytest.skip("member reads did not become consistent in time")
+            assert member.member_id == member_id
+            assert member.sensor.sensor_index == sensor_index
+            assert members.group_id == group_id
         finally:
             await write_api.groups.async_delete_member(group_id, member_id)
     finally:
