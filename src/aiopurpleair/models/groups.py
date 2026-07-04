@@ -1,6 +1,7 @@
 """Define request and response models for groups.
 
-All group and member response shapes are verified against the live API. The
+All group and member response shapes were captured from and verified against
+the live API (see the opt-in ``tests/test_live_api.py`` groups round-trip). The
 members-data reads reuse the sensors response shape with ``group_id`` (and the
 single-member read also carries ``member_id``); ``max_age`` and
 ``firmware_default_version`` are present but kept optional for robustness.
@@ -111,16 +112,16 @@ class CreateMemberRequest(PurpleAirBaseModel):
 
     @field_validator("location_type", mode="before")
     @classmethod
-    def validate_location_type(cls, value: LocationType) -> int:
+    def validate_location_type(cls, value: LocationType | int) -> int:
         """Validate the location type.
 
         Args:
-            value: A LocationType value.
+            value: A LocationType value (or its integer form).
 
         Returns:
             The integer-based interpretation of a location type.
         """
-        return value.value
+        return value.value if isinstance(value, LocationType) else value
 
 
 class CreateMemberResponse(PurpleAirBaseModel):
