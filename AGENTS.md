@@ -172,7 +172,7 @@ Full language rules live in [CODESTYLE.md](./CODESTYLE.md) (a General section pl
 - **Tools target the 3.13 floor** (`target-version = "py313"`, `python_version = "3.13"`, `pythonVersion = "3.13"`), so 3.13 compatibility is statically enforced, while CI's pytest matrix exercises both **3.13 and 3.14**.
 - **Snapshot tests use [syrupy][syrupy].** Regenerate them with `uv run pytest --snapshot-update` only when a response model changes intentionally; review the snapshot diff like any other code.
 - Run the lint set plus `uv run pytest` before pushing - `ruff` alone does not cover `mypy` or `pyright`, both of which are CI gates.
-- **Docs also have a CI gate** (the `docs` job in [`validate-task.yml`](.github/workflows/validate-task.yml)): `markdownlint` on all `*.md`, `cspell` on `README.md` + `HISTORY.md`, `actionlint`, and `shellcheck`. **Run these locally; don't skip a check or defer it to CI because a tool isn't installed.** `cspell`/`markdownlint-cli2` are Node tools that may be absent - run them via the same Docker image CI uses:
+- **Docs also have a CI gate** (the `docs` job in [`validate-task.yml`](.github/workflows/validate-task.yml)): `markdownlint` on all `*.md`, `cspell` on `README.md` + `HISTORY.md`, `actionlint`, and `shellcheck`. **Run these locally; don't skip a check or defer it to CI because a tool isn't installed.** `cspell`/`markdownlint-cli2` are Node tools that may be absent - run the same tool via its official Docker image (CI runs these through GitHub Actions, but the images run the identical binaries):
 
   ```sh
   docker run --rm -v "$PWD:/workdir" ghcr.io/streetsidesoftware/cspell:latest --no-progress --config cspell.json README.md HISTORY.md
