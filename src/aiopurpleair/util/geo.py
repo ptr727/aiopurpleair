@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-EARTH_RAIDUS_KM = 6378.1
+EARTH_RADIUS_KM = 6378.1
 
 MINIMUM_LATITUDE = math.radians(-90)
 MAXIMUM_LATITUDE = math.radians(90)
@@ -83,7 +83,7 @@ class GeoLocation:
         if distance_km < 0:
             raise ValueError("Cannot calculate a bounding box with negative distance")
 
-        distance_radians = distance_km / EARTH_RAIDUS_KM
+        distance_radians = distance_km / EARTH_RADIUS_KM
         box_minimum_latitude = self.latitude_radians - distance_radians
         box_maximum_latitude = self.latitude_radians + distance_radians
 
@@ -118,7 +118,7 @@ class GeoLocation:
         Returns:
             The distance between this GeoLocation and the endpoint GeoLocation.
         """
-        return EARTH_RAIDUS_KM * math.acos(
+        return EARTH_RADIUS_KM * math.acos(
             math.sin(self.latitude_radians) * math.sin(endpoint.latitude_radians)
             + math.cos(self.latitude_radians)
             * math.cos(endpoint.latitude_radians)
