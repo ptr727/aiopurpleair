@@ -24,7 +24,7 @@ class ApiKeyType(StrEnum):
 class GetKeysResponse(PurpleAirBaseModel):
     """Define a response to GET /v1/keys."""
 
-    api_key_type: str
+    api_key_type: ApiKeyType
     api_version: str
     timestamp_utc: datetime = Field(alias="time_stamp")
 
