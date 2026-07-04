@@ -1,0 +1,15 @@
+// Single markdownlint config, honored by both markdownlint-cli2 (Docker CLI) and the
+// VS Code markdownlint extension. Rules live inline under "config"; file selection under
+// "globs"/"ignores".
+{
+  "config": {
+    "default": true,
+    "MD013": false, // line-length: prose/tables wrap freely
+    "MD060": false
+  },
+  "globs": ["**/*.md"],
+  "ignores": [
+    ".venv",
+    "**/node_modules"
+  ]
+}
