@@ -6,5 +6,7 @@
 # git ls-files --eol
 * -text
 
-# Shell scripts must stay LF regardless of the `* -text` default - a CRLF shebang breaks execution.
+# Shell scripts must stay LF regardless of the `* -text` default - a CRLF shebang breaks execution. `.sh`
+# covers most; `scripts/*` also pins the extensionless executables there (which match no extension rule).
 *.sh text eol=lf
+scripts/* text eol=lf

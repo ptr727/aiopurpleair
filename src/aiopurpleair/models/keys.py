@@ -24,17 +24,17 @@ class ApiKeyType(StrEnum):
 class GetKeysResponse(PurpleAirBaseModel):
     """Define a response to GET /v1/keys."""
 
-    api_key_type: str
+    api_key_type: ApiKeyType
     api_version: str
     timestamp_utc: datetime = Field(alias="time_stamp")
 
     @field_validator("api_key_type", mode="before")
     @classmethod
-    def validate_api_key_type(cls, value: str) -> ApiKeyType:
+    def validate_api_key_type(cls, value: str | ApiKeyType) -> ApiKeyType:
         """Validate the API key type.
 
         Args:
-            value: An API key to validate.
+            value: The raw API key type value to validate.
 
         Returns:
             A parsed ApiKeyType.

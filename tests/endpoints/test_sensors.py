@@ -350,3 +350,94 @@ async def test_get_sensors_validation_error(aresponses: ResponsesMockServer) -> 
         assert "foobar is an unknown field" in str(err.value)
 
     aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.asyncio
+async def test_get_sensor_history(aresponses: ResponsesMockServer) -> None:
+    """Test the GET /sensors/:sensor_index/history endpoint.
+
+    Args:
+        aresponses: An aresponses server.
+    """
+    aresponses.add(
+        "api.purpleair.com",
+        "/v1/sensors/12345/history",
+        "get",
+        response=aiohttp.web_response.json_response(
+            json.loads(load_fixture("get_sensor_history_response.json")), status=200
+        ),
+    )
+
+    async with aiohttp.ClientSession() as session:
+        api = API(TEST_API_KEY, session=session)
+        response = await api.sensors.async_get_sensor_history(
+            12345,
+            ["humidity", "temperature", "pm2.5_atm"],
+            start_timestamp_utc=datetime(2022, 11, 1, 19, 26, 29, tzinfo=UTC),
+            end_timestamp_utc=datetime(2022, 11, 3, 19, 26, 29, tzinfo=UTC),
+            average=60,
+        )
+        assert response.api_version == "V1.2.0-1.1.45"
+        assert response.sensor_index == 131075
+        assert response.average == 60
+        assert response.private is True
+        assert response.timestamp_utc == datetime(2022, 11, 3, 19, 26, 29, tzinfo=UTC)
+        assert response.start_timestamp_utc == datetime(2022, 11, 1, 19, 26, 29, tzinfo=UTC)
+        assert response.end_timestamp_utc == datetime(2022, 11, 3, 19, 26, 29, tzinfo=UTC)
+        assert response.fields == ["time_stamp", "humidity", "temperature", "pm2.5_atm"]
+        assert len(response.data) == 3
+        assert response.data[0] == {
+            "time_stamp": 1667336400,
+            "humidity": 37,
+            "temperature": 87,
+            "pm2.5_atm": 1.1,
+        }
+
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.asyncio
+async def test_get_sensor_history_csv(aresponses: ResponsesMockServer) -> None:
+    """Test the GET /sensors/:sensor_index/history/csv endpoint.
+
+    Args:
+        aresponses: An aresponses server.
+    """
+    csv = load_fixture("get_sensor_history_response.csv")
+    aresponses.add(
+        "api.purpleair.com",
+        "/v1/sensors/12345/history/csv",
+        "get",
+        response=aiohttp.web_response.Response(status=200, text=csv, content_type="text/csv"),
+    )
+
+    async with aiohttp.ClientSession() as session:
+        api = API(TEST_API_KEY, session=session)
+        result = await api.sensors.async_get_sensor_history_csv(
+            12345,
+            ["humidity", "pm2.5_atm"],
+            read_key="abc123",
+            average=60,
+        )
+        assert result == csv
+        assert result.startswith("time_stamp,sensor_index,humidity,pm2.5_atm")
+
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.asyncio
+async def test_get_sensor_history_validation_error(aresponses: ResponsesMockServer) -> None:
+    """Test the sensor history endpoints reject an unknown field before requesting.
+
+    Args:
+        aresponses: An aresponses server.
+    """
+    async with aiohttp.ClientSession() as session:
+        api = API(TEST_API_KEY, session=session)
+        with pytest.raises(InvalidRequestError) as err:
+            _ = await api.sensors.async_get_sensor_history(12345, ["foobar"])
+        assert "foobar is an unknown field" in str(err.value)
+        with pytest.raises(InvalidRequestError):
+            _ = await api.sensors.async_get_sensor_history_csv(12345, ["foobar"])
+
+    aresponses.assert_plan_strictly_followed()

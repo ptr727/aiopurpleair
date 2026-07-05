@@ -1,7 +1,7 @@
 name: Get version information task
 
 # Reusable versioning task: NBGV computes the package version from version.json + git history once, and
-# threads it to every consumer (build, release). CalVer base 2026.8; main is the public ref (clean SemVer),
+# threads it to every consumer (build, release). SemVer base 1.0; main is the public ref (clean SemVer),
 # every other branch carries NBGV's auto -g{sha} prerelease segment. Copied near-verbatim from the shared
 # ProjectTemplate task, with a derived Prerelease flag added for the callers that branch on it.
 
@@ -67,9 +67,9 @@ jobs:
 
       - name: Compose workflow outputs step
         id: out
-        # NBGV's PrereleaseVersion output only carries version.json's `-tag` segment (empty for a bare CalVer base); the
+        # NBGV's PrereleaseVersion output only carries version.json's `-tag` segment (empty for a bare SemVer base); the
         # auto-appended -g{sha} segment lives in SemVer2 but is not exposed there. Detect prerelease by testing SemVer2
-        # for any `-`: true for `2026.8.5-g1a2b3c4` (develop), false for `2026.8.5` (main). This also keeps a manual
+        # for any `-`: true for `1.0.5-g1a2b3c4` (develop), false for `1.0.5` (main). This also keeps a manual
         # workflow_dispatch from the wrong branch honest about its prerelease status.
         env:
           SEMVER2: ${{ steps.nbgv.outputs.SemVer2 }}

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 from aiopurpleair.endpoints import APIEndpointsBase
 from aiopurpleair.models.organizations import GetOrganizationResponse
 
@@ -17,11 +15,8 @@ class OrganizationsEndpoints(APIEndpointsBase):  # pylint: disable=too-few-publi
         Returns:
             An API response payload in the form of a Pydantic model.
         """
-        return cast(
+        return await self._async_request(
+            "get",
+            "/organization",
             GetOrganizationResponse,
-            await self._async_request(
-                "get",
-                "/organization",
-                GetOrganizationResponse,
-            ),
         )

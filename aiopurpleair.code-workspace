@@ -1,0 +1,59 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        // Interpreter: the uv-managed .venv. Not hard-coded here - the Python
+        // extension auto-detects .venv on every OS (.venv/bin on POSIX,
+        // .venv/Scripts on Windows).
+        "python.terminal.activateEnvironment": true,
+        "python.languageServer": "Pylance",
+        // Pylance mirrors [tool.pyright] in pyproject.toml (standard base, strict on src).
+        "python.analysis.typeCheckingMode": "standard",
+        "python.analysis.extraPaths": ["src"],
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"],
+        // Use the tools installed in the venv (matching the CLI versions + pyproject config)
+        // rather than the extensions' bundled copies, so the editor and CLI agree.
+        "ruff.importStrategy": "fromEnvironment",
+        "mypy-type-checker.importStrategy": "fromEnvironment",
+        "mypy-type-checker.args": ["--strict"],
+        // Format and fix with ruff on save, matching `ruff format` + `ruff check --fix`.
+        "[python]": {
+            "editor.defaultFormatter": "charliermarsh.ruff",
+            "editor.formatOnSave": true,
+            "editor.codeActionsOnSave": {
+                "source.fixAll.ruff": "explicit",
+                "source.organizeImports.ruff": "explicit"
+            }
+        },
+        "files.trimTrailingWhitespace": true,
+        "files.trimTrailingWhitespaceInRegexAndStrings": false,
+        "diffEditor.ignoreTrimWhitespace": false,
+        "editor.renderWhitespace": "boundary",
+        "files.encoding": "utf8",
+        "[markdown]": {
+            "files.trimTrailingWhitespace": false
+        },
+        "[plaintext]": {
+            "files.trimTrailingWhitespace": false
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "ms-python.mypy-type-checker",
+            "charliermarsh.ruff",
+            "davidanson.vscode-markdownlint",
+            "streetsidesoftware.code-spell-checker",
+            "editorconfig.editorconfig",
+            "github.vscode-github-actions",
+            "yzhang.markdown-all-in-one",
+            "fanaticpythoner.better-todo-tree",
+            "anthropic.claude-code"
+        ]
+    }
+}

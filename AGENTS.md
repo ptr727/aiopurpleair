@@ -6,7 +6,11 @@ Notes for AI coding agents working in this repo. Keep responses concise; prefer 
 
 An async Python client library for the [PurpleAir][purpleair] air-quality API, published to PyPI as **`ptr727-aiopurpleair`** (the import package stays `aiopurpleair`). It covers the sensors and keys endpoints, adds a `GET /v1/organization` endpoint for tracking remaining API points, and maps the API's documented error codes to a typed exception hierarchy. Library source lives under [`src/aiopurpleair/`](src/aiopurpleair/) (src-layout), the build backend is hatchling, and the environment is [uv][uv]-managed. `requires-python >=3.13`.
 
-The library began as the `feat/organization-endpoint-and-error-codes` branch of a fork of [bachya/aiopurpleair][upstream] by Aaron Bach. Those additions were proposed upstream, the upstream maintainer became unresponsive, and the contribution was abandoned; it is now independently maintained here. It is **MIT-licensed with dual copyright** - original © 2024 Aaron Bach, current © 2026 Pieter Viljoen - retained in [LICENSE](LICENSE) and [NOTICE](NOTICE). The primary consumer is the [`homeassistant-purpleair`][ha-purpleair] HACS integration.
+The library began as the `feat/organization-endpoint-and-error-codes` branch of a fork of [bachya/aiopurpleair][upstream] by Aaron Bach. Those additions were proposed upstream and later abandoned; the library is now independently maintained here. It is **MIT-licensed with dual copyright** - original © 2024 Aaron Bach, current © 2026 Pieter Viljoen - retained in [LICENSE](LICENSE) and [NOTICE](NOTICE). The primary consumer is the [`homeassistant-purpleair`][ha-purpleair] HACS integration.
+
+## Supported development platforms
+
+Development runs cross-platform on **Linux, macOS, and Windows**. The toolchain is entirely `uv run` (ruff, mypy, pyright, pytest), which behaves identically on every OS, and the dev loop has no bash scripts (the only shell script, [`repo-config/configure.sh`](repo-config/configure.sh), is for repo administration, not development); the VS Code tasks in [.vscode/tasks.json](.vscode/tasks.json) wrap the same `uv run` commands. (The consuming [`homeassistant-purpleair`][ha-purpleair] integration is Linux-only because Home Assistant Core doesn't run on Windows natively - that constraint does not apply to this library.)
 
 ## Branches and merging
 
@@ -75,9 +79,9 @@ PurpleAir does not publish an OpenAPI/Swagger spec; its docs at <https://api.pur
 - **Version comes from the changelog, not the metadata.** apiDoc's build version (`api_project.js` `version`) lags the real REST API version, which is published only as a changelog in the `welcome` doc-block. The script takes the real version as the highest semver in that changelog and records the build version in the spec description. Trust the changelog version.
 - **Validate the code against the spec** when adding or changing an endpoint, response model, sensor field, or error class:
   - Endpoints in [`api.py`](src/aiopurpleair/api.py) / [`endpoints/`](src/aiopurpleair/endpoints/) must map to a spec `paths` entry (path + method). An endpoint the spec lacks is API drift - regenerate first, don't invent it.
-  - `SENSOR_FIELDS` in [`const.py`](src/aiopurpleair/const.py) and the [`models/`](src/aiopurpleair/models/) response fields must stay a subset of the spec's `components.schemas.SensorDataFields`. An orphan field (in the code, not the spec) means the spec is stale (regenerate) or the field is wrong.
-  - The exception classes and `ERROR_CODE_MAP` in [`errors.py`](src/aiopurpleair/errors.py) should track the spec's `components.schemas.Error` `error` enum.
-- **Known coverage gaps** (against API `1.2.0`): the Groups API (`/groups*`) and sensor history (`/sensors/{sensor_index}/history[/csv]`) are not yet implemented; keys, organization, and current sensor data are complete. Closing a gap means a new endpoint + models + tests, validated against the spec path it fills.
+  - `SENSOR_FIELDS` in [`const.py`](src/aiopurpleair/const.py) is the **requestable** `fields` catalog and must be a subset of the live API's accepted values. Note the spec's `components.schemas.SensorDataFields` mixes requestable fields with **response-only** ones: `stats`/`stats_a`/`stats_b` are returned in the sensor payload (and parsed by `SensorModel`) but are **rejected** as `fields` values (`InvalidFieldValueError`), so they must **not** be in `SENSOR_FIELDS`. The live full-catalog test (`test_live_sensors_parse_with_full_field_catalog`) is the guard: it requests every `SENSOR_FIELDS` entry, so an unrequestable field fails it.
+  - The exception classes and `ERROR_CODE_MAP` in [`errors.py`](src/aiopurpleair/errors.py) track the spec's `components.schemas.Error` `error` enum, **plus** the HTTP/auth error codes the spec's per-endpoint `@apiError` blocks omit (API-key, payment, rate-limit, https, data-initializing). Keep both: the spec enum is a documented subset, not the full set the API returns.
+- **Coverage**: all 11 spec paths (API `1.2.0`) are implemented and every response shape is verified against the live API - keys, sensors (list, single, history JSON/CSV), organization, and the full Groups API (groups CRUD, member add/remove, members data, single member, member history CSV). Note: group create/member-add are eventually consistent (a just-created group can 404 the member endpoint for ~10s), so live capture polls until the group settles.
 
 ## Live API validation
 
@@ -91,7 +95,7 @@ The default suite is fully mocked (aresponses + syrupy) and hits no network. [`t
   ```
 
   Use `--no-cov` because this layer intentionally doesn't drive the 100% coverage gate (that is the mocked suite's job). Omitting the flag or the file leaves the default `uv run pytest` unchanged - live tests skip.
-- **What it checks**: each configured READ key validates via `check_api_key`; the organization endpoint parses for each account (asserting only field *types*, since `remaining_points` may legitimately be negative); and each owned sensor parses when **every** `SENSOR_FIELDS` entry is requested - an unknown field would raise, so a clean parse proves the catalog is a valid subset of the live API. When adding an endpoint or field, extend this file so real data exercises it.
+- **What it checks**: each configured READ key validates via `check_api_key`; the organization endpoint parses for each account (asserting only field *types*, since `remaining_points` may legitimately be negative); each owned sensor parses when **every** `SENSOR_FIELDS` entry is requested (an unknown/unrequestable field would raise, so a clean parse proves the catalog); sensor history JSON+CSV parse (trying each key, since history is gated per key and skips if disabled for all); and a self-cleaning groups round-trip creates a group with the WRITE key, lists it with the same-account READ key, and always deletes it. Uses `PURPLEAIR_API_KEY_WRITE` for writes. When adding an endpoint or field, extend this file so real data exercises it.
 
 ## PR Review Etiquette
 
@@ -172,6 +176,14 @@ Full language rules live in [CODESTYLE.md](./CODESTYLE.md) (a General section pl
 - **Tools target the 3.13 floor** (`target-version = "py313"`, `python_version = "3.13"`, `pythonVersion = "3.13"`), so 3.13 compatibility is statically enforced, while CI's pytest matrix exercises both **3.13 and 3.14**.
 - **Snapshot tests use [syrupy][syrupy].** Regenerate them with `uv run pytest --snapshot-update` only when a response model changes intentionally; review the snapshot diff like any other code.
 - Run the lint set plus `uv run pytest` before pushing - `ruff` alone does not cover `mypy` or `pyright`, both of which are CI gates.
+- **Docs also have a CI gate** (the `docs` job in [`validate-task.yml`](.github/workflows/validate-task.yml)): `markdownlint` on all `*.md`, `cspell` on `README.md` + `HISTORY.md`, `actionlint`, and `shellcheck`. **Run these locally; don't skip a check or defer it to CI because a tool isn't installed.** `cspell`/`markdownlint-cli2` are Node tools that may be absent - run the same tool via its official Docker image (CI runs these through GitHub Actions, but the images run the identical binaries):
+
+  ```sh
+  docker run --rm -v "$PWD:/workdir" -w /workdir ghcr.io/streetsidesoftware/cspell:latest --no-progress --config cspell.json README.md HISTORY.md
+  docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest '**/*.md'
+  docker run --rm -v "$PWD:/workdir" -w /workdir rhysd/actionlint:latest -color
+  docker run --rm -v "$PWD:/workdir" -w /workdir koalaman/shellcheck:latest repo-config/configure.sh
+  ```
 
 ## Bot identity and secrets
 
