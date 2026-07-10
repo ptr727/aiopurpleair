@@ -1,20 +1,18 @@
 name: Publish project release action
 
-# Branch-scoped self-publisher: a push to main or develop that changes a shipped input, or a manual dispatch,
-# publishes that branch.
+# Publisher. A human PR merge never auto-publishes; a release is a deliberate dispatch or a bot merge to main.
 #
-# - Trigger: a push that changes a shipped input (the on.push.paths inclusion list below - library source,
-#   package metadata, version floor, or the locked dependency set), or a workflow_dispatch on the target
-#   branch. uv.lock is listed: a PyPI release cannot be re-pushed for the same version, so a dependency bump
-#   must republish to keep the package's declared dependencies current - this closes the stale/vulnerable
-#   window.
-# - Output: main publishes a stable release, develop a .dev0 prerelease. A dispatch force-publishes its branch.
-# - Gate: publish-pypi needs the same validate-task the PR runs, so nothing publishes that would fail
-#   validation, on any path (push, dispatch, or force-push).
-# - The merge-bot merges with an App token, so its merge commits reach this push trigger.
+# - Push trigger (main only, on.push.paths inclusion list below - library source, package metadata, version
+#   floor, or the locked dependency set): a code-affecting Dependabot/codegen merge auto-publishes a stable
+#   release. The build job is gated to the App identity that merges every bot PR (github.actor), so a human
+#   merge or promotion to main skips - the maintainer dispatches when the change is release-ready. uv.lock is
+#   listed: a PyPI version can't be re-pushed, so a dependency bump must republish to keep declared dependencies
+#   current (closes the stale/vulnerable window).
+# - workflow_dispatch: the maintainer publishes the chosen branch - main a stable release, develop a .dev0 prerelease.
+# - Gate: publish-pypi needs the same validate-task the PR runs, so nothing publishes that would fail validation.
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'src/aiopurpleair/**'
       - 'pyproject.toml'
@@ -42,6 +40,11 @@ jobs:
   build:
     name: Build project release job
     needs: validate
+    # A human merge never auto-publishes; on a push, build (and thus publish-pypi) runs only for a bot merge -
+    # the codegen App merges every Dependabot/codegen PR, so its identity gates it. A dispatch publishes the branch.
+    if: >-
+      ${{ (github.event_name == 'push' && (github.actor == 'ptr727-codegen[bot]' || github.actor == 'dependabot[bot]')) ||
+          (github.event_name == 'workflow_dispatch' && (github.ref_name == 'main' || github.ref_name == 'develop')) }}
     uses: ./.github/workflows/build-release-task.yml
     secrets: inherit
     permissions:
