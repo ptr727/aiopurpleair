@@ -4,8 +4,8 @@ name: Publish project release action
 #
 # - Push trigger (main only, on.push.paths inclusion list below - library source, package metadata, version
 #   floor, or the locked dependency set): a code-affecting Dependabot/codegen merge auto-publishes a stable
-#   release. The build job is gated to the App identity that merges every bot PR (github.actor), so a human
-#   merge or promotion to main skips - the maintainer dispatches when the change is release-ready. uv.lock is
+#   release. The plan job (publish-plan-task.yml) computes the gate once - only the codegen App / Dependabot
+#   actor qualifies on a push, so a human merge or promotion to main skips and the maintainer dispatches. uv.lock is
 #   listed: a PyPI version can't be re-pushed, so a dependency bump must republish to keep declared dependencies
 #   current (closes the stale/vulnerable window).
 # - workflow_dispatch: the maintainer publishes the chosen branch - main a stable release, develop a .dev0 prerelease.
@@ -28,9 +28,21 @@ concurrency:
 
 jobs:
 
-  # The same lint + test gate the PR runs. publish-pypi needs it, so a failing test or lint blocks the release.
+  # Single source of the release-gate decision (publish? stable?); every job gates on its outputs instead of
+  # re-testing event/actor/branch. See publish-plan-task.yml for the policy.
+  plan:
+    name: Plan release job
+    uses: ./.github/workflows/publish-plan-task.yml
+    with:
+      event_name: ${{ github.event_name }}
+      actor: ${{ github.actor }}
+      ref_name: ${{ github.ref_name }}
+
+  # The same lint + test gate the PR runs, on the branch tip; runs only when a publish will happen.
   validate:
     name: Validate job
+    needs: [plan]
+    if: ${{ needs.plan.outputs.publish == 'true' }}
     uses: ./.github/workflows/validate-task.yml
     secrets: inherit
 
@@ -39,12 +51,8 @@ jobs:
   # the read-only smoke caller is not forced to over-grant).
   build:
     name: Build project release job
-    needs: validate
-    # A human merge never auto-publishes; on a push, build (and thus publish-pypi) runs only for a bot merge -
-    # the codegen App merges every Dependabot/codegen PR, so its identity gates it. A dispatch publishes the branch.
-    if: >-
-      ${{ (github.event_name == 'push' && (github.actor == 'ptr727-codegen[bot]' || github.actor == 'dependabot[bot]')) ||
-          (github.event_name == 'workflow_dispatch' && (github.ref_name == 'main' || github.ref_name == 'develop')) }}
+    needs: [plan, validate]
+    if: ${{ needs.plan.outputs.publish == 'true' }}
     uses: ./.github/workflows/build-release-task.yml
     secrets: inherit
     permissions:
@@ -58,7 +66,8 @@ jobs:
   # The pypi environment's deployment branch rule restricts uploads to main + develop as defense in depth.
   publish-pypi:
     name: Publish PyPI library job
-    needs: [validate, build]
+    needs: [plan, validate, build]
+    if: ${{ needs.plan.outputs.publish == 'true' }}
     runs-on: ubuntu-latest
     environment:
       name: pypi
