@@ -1,0 +1,16 @@
+# Local pre-commit: language formatting and style only (ruff). Full doc-lint runs in CI and the VS Code Lint tasks.
+# Install with prek (uvx prek install), a fast drop-in for pre-commit. The local hooks run the repo's own ruff
+# (from uv.lock) so the hook and CI use one version, and Dependabot's uv ecosystem keeps it current.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
