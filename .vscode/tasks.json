@@ -31,8 +31,9 @@
             "problemMatcher": [],
             "presentation": { "reveal": "always", "panel": "shared", "clear": true }
         },
-        // Lint group - the local full doc-lint surface (Docker at :latest), matching the CI lint set.
-        // Run on demand. The pre-commit hook does language formatting only. Every repo carries these.
+        // Lint group - the local full doc-lint surface: the same tools and scope as the CI lint set (these run
+        // Docker at :latest, so versions can drift from CI's pinned actions). Run on demand. The pre-commit hook
+        // does language formatting only. Every repo carries these.
         {
             "label": "Lint: EditorConfig",
             "type": "process",
@@ -70,7 +71,7 @@
             "label": "Lint: Spelling",
             "type": "process",
             "command": "docker",
-            "args": [ "run", "--rm", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "ghcr.io/streetsidesoftware/cspell:latest", "--no-progress", "README.md", "HISTORY.md" ],
+            "args": [ "run", "--rm", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "ghcr.io/streetsidesoftware/cspell:latest", "--no-progress", "--config", "cspell.json", "README.md", "HISTORY.md" ],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
