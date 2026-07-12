@@ -70,7 +70,7 @@
             "label": "Lint: Spelling",
             "type": "process",
             "command": "docker",
-            "args": [ "run", "--rm", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "ghcr.io/streetsidesoftware/cspell:latest", "--no-progress", "README.md" ],
+            "args": [ "run", "--rm", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "ghcr.io/streetsidesoftware/cspell:latest", "--no-progress", "README.md", "HISTORY.md" ],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
