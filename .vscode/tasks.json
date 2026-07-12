@@ -38,7 +38,7 @@
             "label": "Lint: EditorConfig",
             "type": "process",
             "command": "docker",
-            "args": [ "run", "--rm", "-v", "${workspaceFolder}:/check", "-w", "/check", "mstruebing/editorconfig-checker:latest" ],
+            "args": [ "run", "--rm", "--pull=always", "-v", "${workspaceFolder}:/check", "-w", "/check", "mstruebing/editorconfig-checker:latest" ],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
@@ -49,7 +49,7 @@
             "label": "Lint: Workflows",
             "type": "process",
             "command": "docker",
-            "args": [ "run", "--rm", "-v", "${workspaceFolder}:/repo", "-w", "/repo", "rhysd/actionlint:latest", "-color" ],
+            "args": [ "run", "--rm", "--pull=always", "-v", "${workspaceFolder}:/repo", "-w", "/repo", "rhysd/actionlint:latest", "-color" ],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
@@ -60,7 +60,7 @@
             "label": "Lint: Markdown",
             "type": "process",
             "command": "docker",
-            "args": [ "run", "--rm", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "davidanson/markdownlint-cli2:latest", "**/*.md" ],
+            "args": [ "run", "--rm", "--pull=always", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "davidanson/markdownlint-cli2:latest", "**/*.md" ],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
@@ -71,7 +71,7 @@
             "label": "Lint: Spelling",
             "type": "process",
             "command": "docker",
-            "args": [ "run", "--rm", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "ghcr.io/streetsidesoftware/cspell:latest", "--no-progress", "--config", "cspell.json", "README.md", "HISTORY.md" ],
+            "args": [ "run", "--rm", "--pull=always", "-v", "${workspaceFolder}:/workdir", "-w", "/workdir", "ghcr.io/streetsidesoftware/cspell:latest", "--no-progress", "--config", "cspell.json", "README.md", "HISTORY.md" ],
             "problemMatcher": [],
             "presentation": {
                 "showReuseMessage": false,
