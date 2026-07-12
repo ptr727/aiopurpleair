@@ -173,6 +173,7 @@ If a reviewer argues for relaxing any of these, escalate to the maintainer rathe
 Full language rules live in [CODESTYLE.md](./CODESTYLE.md) (a General section plus a self-contained Python section). Highlights:
 
 - The toolchain runs through `uv run`: `uv run ruff check` (lint), `uv run ruff format --check` (format verify), `uv run mypy src` (strict, shipped surface only), `uv run pyright` (src + tests, strict on src), `uv run pytest` (tests with a **100% coverage** gate).
+- **A pre-commit hook runs ruff** (`uv run ruff check --fix` + `uv run ruff format`) on staged Python files. Install it with `uvx prek install` (prek, a fast drop-in for pre-commit). It is language formatting only - the doc linters and full checks run in CI and the VS Code Lint tasks.
 - **Tools target the 3.13 floor** (`target-version = "py313"`, `python_version = "3.13"`, `pythonVersion = "3.13"`), so 3.13 compatibility is statically enforced, while CI's pytest matrix exercises both **3.13 and 3.14**.
 - **Snapshot tests use [syrupy][syrupy].** Regenerate them with `uv run pytest --snapshot-update` only when a response model changes intentionally; review the snapshot diff like any other code.
 - Run the lint set plus `uv run pytest` before pushing - `ruff` alone does not cover `mypy` or `pyright`, both of which are CI gates.
