@@ -75,7 +75,7 @@ jobs:
       # Pin to the versioned commit so the package and the release tag match even if the branch advances
       # mid-run. NBGV already ran in get-version; this is a build checkout only.
       - name: Checkout code step
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.get-version.outputs.GitCommitId }}
 
@@ -143,7 +143,7 @@ jobs:
       # Same versioned commit (GitCommitId) the build used, so the release tag and the LICENSE/README files
       # match it.
       - name: Checkout code step
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.get-version.outputs.GitCommitId }}
 
