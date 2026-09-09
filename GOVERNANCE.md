@@ -262,6 +262,8 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - [`AGENTS.md`](./AGENTS.md): the agent entry point, carrying context and delegation rules plus the map to the sections below.
 - [`CLAUDE.md`](./CLAUDE.md): imports `AGENTS.md`, since Claude Code reads `CLAUDE.md` and never `AGENTS.md` on its own. Carries no rule of its own.
 - [`GOVERNANCE.md`](./GOVERNANCE.md), [`CODESTYLE.md`](./CODESTYLE.md), [`WORKFLOW.md`](./WORKFLOW.md), [`AUDIT.md`](./AUDIT.md): the carried governance and audit docs. This file is the cross-cutting-rules authority.
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md): how the library is built, its module layout, and the generated-spec contract its API surface is validated against.
+- [`host-tools.json`](./host-tools.json): this repository's own host-tool declaration, layered tighten-only over the fleet declaration by the hub's host gate.
 - [`OPERATIONS.md`](./OPERATIONS.md): this repo's own runbooks, verification procedures, and local rule extensions. Anything this repo knows that the fleet does not lives here rather than in a carried file.
 - [`src/aiopurpleair/`](./src/aiopurpleair/): the library itself, src-layout. [`api.py`](./src/aiopurpleair/api.py) is the client entry point, [`endpoints/`](./src/aiopurpleair/endpoints/) the per-endpoint callers, [`models/`](./src/aiopurpleair/models/) the Pydantic response models, [`errors.py`](./src/aiopurpleair/errors.py) the typed exception hierarchy, and [`_version.py`](./src/aiopurpleair/_version.py) the placeholder the release build rewrites.
 - [`tests/`](./tests/): the mocked default suite (aresponses + syrupy snapshots) plus the opt-in live layer in [`tests/test_live_api.py`](./tests/test_live_api.py).

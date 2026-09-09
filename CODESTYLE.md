@@ -2,7 +2,7 @@
 
 This is the single code-style guide for the repo. The **General** section applies to every language. The **Python** language section is self-contained: it is the style guide for the Python code this repo ships.
 
-Cross-cutting *process* rules (PR titles, branching, US English, markdown style, comments philosophy, PR review etiquette) live in [AGENTS.md](./AGENTS.md) and are not repeated here.
+Cross-cutting *process* rules (PR titles, branching, US English, markdown style, comments philosophy, PR review etiquette) live in [GOVERNANCE.md](./GOVERNANCE.md) and are not repeated here.
 
 ## General
 
@@ -33,7 +33,7 @@ Each language defines a **clean-compile** verification - the combination of buil
 These apply repo-wide, in every directory:
 
 1. **Markdown**: keep `.md` files clean under a standard markdownlint ruleset, with `MD013` (line-length) treated as disabled - long prose lines are intentional here (one logical paragraph per line). Fix violations at the source rather than disabling rules wholesale.
-2. **Spelling**: US English throughout (the repo-wide convention - see [AGENTS.md](./AGENTS.md)). Project-specific terms (`aiopurpleair`, `PurpleAir`, `aiohttp`, `pydantic`, `syrupy`, `NBGV`) are correct, not misspellings.
+2. **Spelling**: US English throughout (the repo-wide convention, see [GOVERNANCE.md](./GOVERNANCE.md) "Documentation Style Conventions"). Project-specific terms (`aiopurpleair`, `PurpleAir`, `aiohttp`, `pydantic`, `syrupy`, `NBGV`) are correct, not misspellings.
 3. **Spelling CI scope**: The enforced CI spell-check gate covers **`README.md` and `HISTORY.md` only** - these are the files every repo visitor sees, so they must be clean. It is deliberately **not** all `**/*.md`: repos carry many markdown files full of technical terms, and gating every one of them would mean endlessly padding `cspell.json` just to keep CI green. Broad, live spell-checking across any file (source, markdown, text) is the **cspell editor extension's** job, so typos still surface to whoever is editing. A repo owner **may** widen their own CI file list, but the template ships README + HISTORY as the default; keep every surface that runs cspell - the CI workflow and any local VS Code task or one-liner the repo has - on the same file list. The list is explicit (not a glob), so a repo that ships no `HISTORY.md` (e.g. one with no changelog) must drop it from all three surfaces and gate on `README.md` alone - cspell errors on a listed file that does not exist. Markdown *linting* (item 1) stays repo-wide `**/*.md` - it does not choke on technical terms.
 
 ## Python
@@ -150,7 +150,7 @@ tests/
 
 ### Versioning
 
-The package version lives nowhere in the committed tree as a real number: `src/aiopurpleair/_version.py` carries a placeholder `__version__` (the single source hatchling reads via `[tool.hatch.version]`). At build time NBGV computes the real version from `version.json` (CalVer base `2026.8` plus git height) and the build task `sed`s the PEP 440 form into `_version.py` **on the runner only** - no commit. See [WORKFLOW.md](./WORKFLOW.md) for the full version model. Don't hand-edit the placeholder to a real version, and don't create manual tags.
+The package version lives nowhere in the committed tree as a real number: `src/aiopurpleair/_version.py` carries a placeholder `__version__` (the single source hatchling reads via `[tool.hatch.version]`). At build time NBGV computes the real version from `version.json` (SemVer base `1.0` plus git height) and the build task `sed`s the PEP 440 form into `_version.py` **on the runner only**, with no commit. See [WORKFLOW.md](./WORKFLOW.md) for the full version model. Don't hand-edit the placeholder to a real version, and don't create manual tags.
 
 ### Linter Cleanliness
 

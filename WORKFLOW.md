@@ -1,6 +1,6 @@
 # WORKFLOW.md
 
-The single guide for this repo's CI/CD **workflows** (GitHub Actions): the model, a **behavioral contract** (expected inputs and outputs), and how to verify it. Source style lives in [`CODESTYLE.md`](./CODESTYLE.md); human-process rules (branching, versioning policy, review etiquette) live in [`AGENTS.md`](./AGENTS.md). This file covers everything under [`.github/workflows/`](./.github/workflows/).
+The single guide for this repo's CI/CD **workflows** (GitHub Actions): the model, a **behavioral contract** (expected inputs and outputs), and how to verify it. Source style lives in [`CODESTYLE.md`](./CODESTYLE.md), and human-process rules (branching, versioning policy, review etiquette) live in [`GOVERNANCE.md`](./GOVERNANCE.md). This file covers everything under [`.github/workflows/`](./.github/workflows/).
 
 It **describes required outcomes, not a required implementation.** A workflow is correct when it satisfies the contract, whatever shape its YAML takes. Each guarantee names the **failure it prevents**, so the reason survives a reimplementation.
 
@@ -163,7 +163,7 @@ Each is a **MUST**, stated as input -> output plus the failure it prevents.
 
 - **D2.1 NBGV runs once, threaded, branch-classified.** Output: NBGV runs once in `get-version-task` with `IGNORE_GITHUB_REF: "true"`, classifying from the checked-out branch; no consumer re-invokes it. *Prevents a leg classified by the wrong ref; a version diverging from the tag.*
 - **D2.2 `main` = stable, others = prerelease.** Output: `main` -> clean `X.Y.Z` (`publicReleaseRefSpec = ^refs/heads/main$`); every other branch -> `X.Y.Z-g<sha>` from NBGV and a `.dev0` PEP 440 package version. The `validate-release` gate fails fast if the branch and the version class disagree (a `main` version with a `-` segment, or a non-main version without one). *Prevents a develop build published as stable.*
-- **D2.3 Version base + git height.** Output: `version.json` sets the SemVer base (`1.0`); NBGV appends the git height, never bumped on a cadence. The computed version is `sed`-stamped into `_version.py` (the checked-in value is a placeholder) and drives the wheel version and the release tag. *(Who raises the base and when is a human-process rule in `AGENTS.md`.)*
+- **D2.3 Version base + git height.** Output: `version.json` sets the SemVer base (`1.0`); NBGV appends the git height, never bumped on a cadence. The computed version is `sed`-stamped into `_version.py` (the checked-in value is a placeholder) and drives the wheel version and the release tag. *(Who raises the base and when is a human-process rule in `GOVERNANCE.md` "Release Model", with this repo's own facts in `OPERATIONS.md` "Release and Versioning Facts".)*
 
 ### D3 - Build and package
 

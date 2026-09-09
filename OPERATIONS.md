@@ -18,12 +18,14 @@ uv run pytest                  # tests, with a 100% coverage gate
 
 A pre-commit hook runs `uv run ruff check --fix` and `uv run ruff format` on staged Python files. Install it with `uvx prek install` (prek, a fast drop-in for pre-commit). It is language formatting only, and the doc linters and the full check set run in CI and in the VS Code Lint tasks.
 
-The docs gate is the `docs` job in [`validate-task.yml`](./.github/workflows/validate-task.yml): `markdownlint` over all `*.md`, `cspell` over `README.md` and `HISTORY.md`, `actionlint`, and `shellcheck`. **Run these locally rather than deferring a check to CI because a tool is not installed.** `cspell` and `markdownlint-cli2` are Node tools that may be absent, so run the identical binaries through their official images:
+The docs gate is the `docs` job in [`validate-task.yml`](./.github/workflows/validate-task.yml), and it runs five checks: `markdownlint` over all `*.md`, `cspell` over `README.md` and `HISTORY.md`, `editorconfig-checker` over the tree, `actionlint`, and `shellcheck`. **Run all five locally rather than deferring a check to CI because a tool is not installed.** Several are Node or Go tools that may be absent, so run the identical binaries through their official images. The commands below are POSIX shell, so on Windows run them from WSL2 or Git Bash, or substitute `${PWD}` for `"$PWD"` in PowerShell:
 
 ```sh
 docker run --rm -v "$PWD:/workdir" -w /workdir ghcr.io/streetsidesoftware/cspell:latest --no-progress --config cspell.json README.md HISTORY.md
 docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest '**/*.md'
+docker run --rm -v "$PWD":/check --workdir /check mstruebing/editorconfig-checker:latest
 docker run --rm -v "$PWD:/workdir" -w /workdir rhysd/actionlint:latest -color
+docker run --rm -v "$PWD:/workdir" -w /workdir koalaman/shellcheck:latest repo-config/configure.sh
 ```
 
 ### Live API Validation
@@ -65,6 +67,10 @@ uv run --with pyyaml --with openapi-spec-validator python scripts/generate_opena
 ```
 
 That is a live fetch, and it writes and validates `docs/purpleair-openapi.yaml`. Pass `--data` and `--project` to run offline from cached `api_data.js` and `api_project.js`. Commit the regenerated spec: a non-empty diff means the upstream API changed and the library's coverage or models may need updating.
+
+### Close an Issue From a Pull Request
+
+**Put issue-closing keywords (`Closes #N`) in the `develop -> main` promotion pull request, not in the feature or `develop` one.** GitHub auto-closes an issue only from the pull request, or commit, that merges to the default branch, which is `main`. A `Closes #N` that merges only to `develop` never fires on promotion and leaves the issue open. Tag the promotion pull request's description, or close the issue by hand once the fix reaches `main`.
 
 ### Add a Dependabot Ecosystem
 
@@ -116,7 +122,7 @@ The version is derived by [Nerdbank.GitVersioning](https://github.com/dotnet/Ner
 
 ### Review and Merge Preconditions
 
-[`GOVERNANCE.md`](./GOVERNANCE.md) "PR Review Etiquette" carries the fleet's review loop and merge gate whole. One fact is specific to this repository and changes what a merge means here.
+[`GOVERNANCE.md`](./GOVERNANCE.md) "PR Review Etiquette" carries the fleet's review loop and merge gate whole. One fact is specific to this repository and changes what a merge means here, and it **overrides** the carried "Release Model" section's two-phase default, which states that a human merge never auto-publishes. That default is the fleet's, and this repository is registered `releaseTrigger: publish-on-merge` instead.
 
 **Merging can release, so know which merges publish.** Unlike a pull-distributed target, this repository publishes on a paths-filtered push: a merge to `main` or `develop` that touches a shipped path (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`) triggers [`publish-release.yml`](./.github/workflows/publish-release.yml), with `main` producing a stable PyPI release and `develop` a `.dev0` prerelease. A merge touching only docs, tests, or workflow YAML does not publish. So before authorizing a merge to a release branch, know whether it hits a shipped path, because if it does, the merge *is* a release. Never trigger a `workflow_dispatch` publish without explicit maintainer instruction.
 
