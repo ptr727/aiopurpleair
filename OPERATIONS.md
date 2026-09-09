@@ -52,7 +52,7 @@ Feature branch from `develop`, then code plus tests, then `uv run ruff format` a
 
 ### Cut a Stable Release
 
-Merge `develop -> main` with a merge commit, then **dispatch the publisher on `main`**. The promotion merge itself publishes nothing, because a human merge never auto-cuts a release, so the release is a separate and deliberate step. A bot merge to `main` touching a shipped path is the one path that publishes without a dispatch.
+Merge `develop -> main` with a merge commit, then **dispatch the publisher on `main`**. The promotion merge itself publishes nothing, because a human merge never auto-cuts a release, so the release is a separate and deliberate step. The one path that publishes without a dispatch is a shipped-path merge to `main` made by an **allowlisted** bot, meaning `ptr727-codegen[bot]` or `dependabot[bot]`.
 
 ### Cut a Prerelease
 
@@ -124,9 +124,9 @@ The version is derived by [Nerdbank.GitVersioning](https://github.com/dotnet/Ner
 
 ### Review and Merge Preconditions
 
-[`GOVERNANCE.md`](./GOVERNANCE.md) "PR Review Etiquette" carries the fleet's review loop and merge gate whole, and this repository now follows it without exception. **A human merge never auto-cuts a release here.** Publishing happens on a bot code-merge to `main`, or on a deliberate dispatch, and the decision has one definition in the hub's `publish-plan-task.yml` that every publisher job gates on.
+[`GOVERNANCE.md`](./GOVERNANCE.md) "PR Review Etiquette" carries the fleet's review loop and merge gate whole, and this repository now follows it without exception. **A human merge never auto-cuts a release here.** Publishing happens on a code-merge to `main` by an allowlisted bot (`ptr727-codegen[bot]` or `dependabot[bot]`), or on a deliberate dispatch, and the decision has one definition in the hub's `publish-plan-task.yml` that every publisher job gates on.
 
-**Your own merge does not release, and a bot's can.** A merge you make to `main` reaches [`publish-release.yml`](./.github/workflows/publish-release.yml)'s push trigger, and the `plan` job then returns `publish=false` and emits a `::warning::` naming the actor, so nothing is built or uploaded. A bot merge to `main` that touches a shipped path (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`) does publish a stable release, which is how a Dependabot bump reaches PyPI without a human step. Everything else is a deliberate dispatch. Never trigger a `workflow_dispatch` publish without explicit maintainer instruction.
+**Your own merge does not release, and an allowlisted bot's can.** A merge you make to `main` reaches [`publish-release.yml`](./.github/workflows/publish-release.yml)'s push trigger, and the `plan` job then returns `publish=false` and emits a `::warning::` naming the actor, so nothing is built or uploaded. The allowlist is exactly `ptr727-codegen[bot]` and `dependabot[bot]`, so any other identity, a new App or a renamed one included, takes that same non-publishing branch. A merge to `main` by one of those two that touches a shipped path (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`) does publish a stable release, which is how a Dependabot bump reaches PyPI without a human step. Everything else is a deliberate dispatch. Never trigger a `workflow_dispatch` publish without explicit maintainer instruction.
 
 ### Release-Train Invariants
 
