@@ -42,7 +42,7 @@ jobs:
       branch: ${{ github.ref_name }}
 
   # Single required status check. Its name is the context the live branch rulesets require, applied from the
-  # hub's payloads rather than from the record in repo-config/. Renaming it starts at the hub, never here, so
+  # hub's payloads, of which this repository carries no copy. Renaming it starts at the hub, never here, so
   # a local rename alone leaves every pull request unmergeable. See OPERATIONS.md "Release-Train Invariants".
   # Must succeed, not merely not-fail.
   check-workflow-status:
