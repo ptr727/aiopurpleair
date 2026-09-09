@@ -51,8 +51,8 @@ That command checks the rulesets, the general settings, the security features, a
 Confirm secret **names** directly, since values are not readable:
 
 ```shell
-gh api repos/ptr727/aiopurpleair/actions/secrets --jq '.secrets[].name'
-gh api repos/ptr727/aiopurpleair/dependabot/secrets --jq '.secrets[].name'
+gh api --paginate repos/ptr727/aiopurpleair/actions/secrets --jq '.secrets[].name'
+gh api --paginate repos/ptr727/aiopurpleair/dependabot/secrets --jq '.secrets[].name'
 ```
 
 Expect `CODEGEN_APP_CLIENT_ID`, `CODEGEN_APP_PRIVATE_KEY`, and `CODECOV_TOKEN` in **both** stores. A Dependabot-triggered run reads the Dependabot store rather than Actions secrets, which is why the Codecov token is copied there too. Expect none of `CODEGEN_APP_ID`, `PYPI_API_TOKEN`, or `TWINE_PASSWORD` in either store: the first is the deprecated App input, and the other two would contradict keyless OIDC publishing. `spec/audit.py aiopurpleair`, run from the same hub checkout, asserts exactly this set from the hub's `spec/secrets.json`, so a disagreement between this paragraph and that run is a defect in this paragraph.
