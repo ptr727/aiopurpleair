@@ -413,7 +413,6 @@ Licensed under the [MIT License][license] and [NOTICE](./NOTICE)\
 
 [actions-link]: https://github.com/ptr727/aiopurpleair/actions
 [commits-link]: https://github.com/ptr727/aiopurpleair/commits/main
-[coverage-link]: https://app.codecov.io/gh/ptr727/aiopurpleair
 [discussions-link]: https://github.com/ptr727/aiopurpleair/discussions
 [github-link]: https://github.com/ptr727/aiopurpleair
 [issues-link]: https://github.com/ptr727/aiopurpleair/issues
@@ -435,6 +434,7 @@ Licensed under the [MIT License][license] and [NOTICE](./NOTICE)\
 [bachya-pr-link]: https://github.com/bachya/aiopurpleair/pull/719
 [certifi-link]: https://github.com/certifi/python-certifi
 [codecov-link]: https://about.codecov.io/
+[coverage-link]: https://app.codecov.io/gh/ptr727/aiopurpleair
 [cspell-link]: https://cspell.org
 [editorconfig-checker-link]: https://github.com/editorconfig-checker/editorconfig-checker
 [github-actions-link]: https://github.com/actions

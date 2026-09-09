@@ -1,6 +1,6 @@
-# PurpleAir Library
+# aiopurpleair
 
-Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
+Async Python client library for the PurpleAir air-quality sensor API.
 
 ## Release History
 
@@ -19,4 +19,3 @@ Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
   - ⚠️ The API-key check moved from the top-level `api.async_check_api_key()` to the grouped `api.keys.async_check_api_key()`, for consistency with `api.sensors` / `api.organizations` / `api.groups`. Update callers to the new path.
 
 [bachya-pr-link]: https://github.com/bachya/aiopurpleair/pull/719
-[purpleair-link]: https://www.purpleair.com/
