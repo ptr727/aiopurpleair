@@ -381,6 +381,7 @@ The third-party tools, libraries, and actions this project depends on.
 | [pyright][pyright-link] | Python static type checker. |
 | [pytest][pytest-link] | Python test framework. |
 | [ruff][ruff-link] | Python linter and formatter. |
+| [ShellCheck][shellcheck-link] | Shell linter, reached through actionlint for workflow `run:` blocks. |
 | [syrupy][syrupy-link] | Snapshot testing plugin for pytest. |
 | [Trusted Publishing][trustedpublishing-link] | Keyless package publishing for PyPI. |
 | [uv][uv-link] | Python package and project manager. |
@@ -448,6 +449,7 @@ Licensed under the [MIT License][license] and [NOTICE](./NOTICE)\
 [pyright-link]: https://github.com/microsoft/pyright
 [pytest-link]: https://docs.pytest.org/
 [ruff-link]: https://docs.astral.sh/ruff/
+[shellcheck-link]: https://www.shellcheck.net/
 [syrupy-link]: https://github.com/syrupy-project/syrupy
 [trustedpublishing-link]: https://docs.pypi.org/trusted-publishers/
 [uv-link]: https://docs.astral.sh/uv/
