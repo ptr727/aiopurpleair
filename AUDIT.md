@@ -38,7 +38,7 @@ Evaluate each applicable check at two tiers: **letter** (the exact file, section
 
 ## 4. Validate Settings, Rulesets, Secrets, and the Publish Environment
 
-Settings, labels, and the ruleset payloads are applied by the hub-hosted `repo-config/configure.sh`. Run it **from a hub checkout at `main`**, which is the copy that takes the repository and model as arguments, rather than from any copy carried in this repository:
+Settings, labels, and the ruleset payloads are the hub's, applied by its `repo-config/configure.sh` against its own payloads. **This repository carries no `repo-config/` directory**, which is the fleet's model rather than an omission, so run the command from a hub checkout at `main`, passing this repository and its model as arguments:
 
 ```shell
 # cwd is a hub checkout of github.com/ptr727/ProjectTemplate, at main
