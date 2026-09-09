@@ -1,214 +1,115 @@
-# Agent guide
+# Instructions for AI Coding Agents
 
-Notes for AI coding agents working in this repo. Keep responses concise; prefer editing existing files over creating new ones; never narrate internal deliberation.
+**aiopurpleair** is an async Python client library for the [PurpleAir](https://api.purpleair.com/#api-welcome) air-quality API, published to PyPI as `ptr727-aiopurpleair` (the import package stays `aiopurpleair`). It covers the sensors, keys, groups, and organization endpoints, and maps the API's documented error codes to a typed exception hierarchy. Library source lives under [`src/aiopurpleair/`](./src/aiopurpleair/) (src-layout), the build backend is hatchling, and the environment is [uv](https://github.com/astral-sh/uv)-managed. `requires-python >=3.13`.
 
-## What this is
+This file is the entry point every coding agent reads first, and it holds only three things: the bootstrap that says where the canonical rules live and which procedure to follow for the state this repository is actually in, the rules for managing context and delegation, which apply to every task, and a map of where every other rule lives. The rule text itself is in [`GOVERNANCE.md`](./GOVERNANCE.md), one section per topic. Code style lives in [`CODESTYLE.md`](./CODESTYLE.md), the CI/CD workflow contract in [`WORKFLOW.md`](./WORKFLOW.md), and this repository's own runbooks, verification procedures, and local rule extensions in [`OPERATIONS.md`](./OPERATIONS.md). **Where this repository's behavior differs from a carried section, [`OPERATIONS.md`](./OPERATIONS.md) "Local Rule Extensions" records what actually happens here.** The release model is the case that matters most, and it is a **migration this repository has not finished** rather than a rule of its own: today a shipped-path merge to `main` or `develop` publishes, where the fleet's `GOVERNANCE.md` "Release Model" says a human merge never auto-publishes. The fleet default is the intended end state, so read a difference there as work outstanding rather than as a local liberty.
 
-An async Python client library for the [PurpleAir][purpleair] air-quality API, published to PyPI as **`ptr727-aiopurpleair`** (the import package stays `aiopurpleair`). It covers the sensors and keys endpoints, adds a `GET /v1/organization` endpoint for tracking remaining API points, and maps the API's documented error codes to a typed exception hierarchy. Library source lives under [`src/aiopurpleair/`](src/aiopurpleair/) (src-layout), the build backend is hatchling, and the environment is [uv][uv]-managed. `requires-python >=3.13`.
+Treat this file and `GOVERNANCE.md` as authoritative for cross-cutting rules, and do not restate their rules elsewhere. This project's **project-specific conventions and public-API/behavioral contracts** live in [`OPERATIONS.md`](./OPERATIONS.md) and [`ARCHITECTURE.md`](./ARCHITECTURE.md). They do **not** go in [`.github/copilot-instructions.md`](./.github/copilot-instructions.md), which targets GitHub Copilot and VS Code specifically. A rule a reviewer must honor therefore has to sit in an agent-agnostic file to be provider-independent. A section of its own in this file is not the alternative. An undeclared section here is drift to reconcile rather than a local liberty.
 
-The library began as the `feat/organization-endpoint-and-error-codes` branch of a fork of [bachya/aiopurpleair][upstream] by Aaron Bach. Those additions were proposed upstream and later abandoned; the library is now independently maintained here. It is **MIT-licensed with dual copyright** - original © 2024 Aaron Bach, current © 2026 Pieter Viljoen - retained in [LICENSE](LICENSE) and [NOTICE](NOTICE). The primary consumer is the [`homeassistant-purpleair`][ha-purpleair] HACS integration.
+## Fleet Bootstrap
 
-## Supported development platforms
+This repository is governed by a shared template, and the canonical rules, machine-readable spec, and procedures live in `github.com/ptr727/ProjectTemplate`, the repository these rules call the hub. Fetch that repository before acting on anything about conformance, carried content, repository settings, or standing a repository up, because a carried copy here can be stale or absent and the hub is the only authority on what this repository is supposed to hold. This section is byte-locked across every repository in the fleet, so it reads identically wherever it is found, and it is the entry point whenever nothing else present says where the rules are.
 
-Development runs cross-platform on **Linux, macOS, and Windows**. The toolchain is entirely `uv run` (ruff, mypy, pyright, pytest), which behaves identically on every OS, and the dev loop has no bash scripts (the only shell script, [`repo-config/configure.sh`](repo-config/configure.sh), is for repo administration, not development); the VS Code tasks in [.vscode/tasks.json](.vscode/tasks.json) wrap the same `uv run` commands. (The consuming [`homeassistant-purpleair`][ha-purpleair] integration is Linux-only because Home Assistant Core doesn't run on Windows natively - that constraint does not apply to this library.)
+Route by what this repository currently holds rather than by what it is expected to hold, since the two differ exactly when this section matters most.
 
-## Branches and merging
-
-- Pipeline is `feature -> develop -> main`. Both `develop` and `main` are protected; everything lands via PR.
-- **Feature -> develop PRs squash-merge** (single commit on develop, PR title becomes the commit message; never rebase-merge).
-- **Develop -> main PRs merge-commit** (one merge commit on main per release, develop's tip becomes a second parent and stays in main's ancestry). The rulesets are split: PRs into `develop` are squash-only (linear history); PRs into `main` are merge-commit only. Clicking "Create a merge commit" on a develop -> main PR makes develop a real ancestor of main, so the *next* develop -> main PR has a clean merge base (no recurring conflicts).
-- Open feature PRs against `develop`. `develop -> main` is how stable releases are cut.
-- The branch rulesets that enforce this (merge methods, required check, signed commits, strict-status off), the repository settings, and the required secret names are codified in [`repo-config/`](repo-config/); `repo-config/configure.sh apply` syncs the live repo and `check` audits it for drift (the 5D audit). Do not restate the ruleset details elsewhere.
-- **Mirror to `develop` any change that lands on `main` outside the feature -> develop -> main flow.** A reconciliation-branch fix made to resolve a `develop -> main` promotion conflict, or a security PR that merges only to `main`, leaves `develop` behind on that content - and forward-only `develop` never back-merges to catch up (the same parallel-target principle as the bots). Before basing new work on `develop`, or diagnosing a defect from it, check `git diff origin/develop origin/main`: a non-empty content diff means develop is stale and the defect may already be fixed on `main`.
-- **Put issue-closing keywords (`Closes #N`) in the `develop -> main` promotion PR, not the feature or develop PR.** GitHub auto-closes an issue only from the PR (or commit) that merges to the default branch (`main`); a `Closes #N` that merges only to `develop` does not fire on promotion and leaves the issue open. Tag the promotion PR's description, or close the issue manually once the fix reaches `main`.
-
-## Git and Commit Rules
-
-- **Default to staging, not committing.** Stage changes with `git add` and leave `git commit` to the developer unless the developer has explicitly authorized the agent to commit for the current ask ("commit this", "open a PR", etc.). Authorization is scope-bound - it covers the commits needed for that specific task, not a blanket commit license for the rest of the session.
-- **All commits must be cryptographically signed (SSH or GPG).** Branch protection enforces this on both branches; unsigned commits are rejected on push. Signing depends on environment configuration - `git config commit.gpgsign true`, a configured `user.signingkey`, and a working signing agent (loaded `ssh-agent` for SSH, or `gpg-agent` for GPG). If signing is not configured in the environment, **do not commit** - surface the missing config to the developer and stop at `git add`. Verify before any agent-authored commit (`git config --get commit.gpgsign && ssh-add -L` or the GPG equivalent). **Signing must be live before the *first* commit, not retrofitted.** Turning on `Require signed commits` against a branch that already has unsigned commits forces a rewrite of that entire history to re-sign it - changing every commit SHA and making whoever does the rewrite the committer and signer of every commit (a rebase preserves the `author` field but not the original signatures; you cannot sign another contributor's commits for them). During new-repo setup, never create commits until signing is verified.
-- **Commit under the committing account's own GitHub `noreply` identity - never a private, personal, or invented address.** The `author` and `committer` on every agent-authored commit are the GitHub `noreply` address of the account whose key signs the commit (above) - GitHub issues these in a `username@users.noreply.github.com` or `ID+username@users.noreply.github.com` form, and for this single-maintainer fleet it is the owner's `ptr727@users.noreply.github.com`. Do not set `user.name`/`user.email` to a fabricated persona, bot name, or product name, and do not commit under whatever identity the environment happens to carry: verify `git config --get user.email` is that GitHub `noreply` address before committing, and fix it if not. A wrong identity is not cosmetic - a private email trips GitHub's email-privacy push protection (GH007), and an unrecognized or invented author pollutes history. Identity is separate from signing: a wrong author does not by itself fail the signature rule, but the ad-hoc identities that produce it are typically also unsigned, which the signing rule above then rejects on push.
-- **Never force push.** Do not run `git push --force` or `git push --force-with-lease` under any circumstances. Force pushing rewrites shared history and can cause data loss.
-- **Never run destructive git commands** (`git reset --hard`, `git checkout .`, `git restore .`, `git clean -f`) without explicit developer instruction.
-
-## Pull Request Title and Commit Message Conventions
-
-### Format
-
-- Imperative subject summarizing the change, <=72 characters, no trailing period. ("Add organization endpoint", not "Added X" or "Adds X".)
-- Optional body, blank-line separated, explaining *why* the change is being made when that's non-obvious. The diff shows *what*.
-
-### Rules
-
-- Don't write `update stuff`, `wip`, or other vague titles. (Dependabot's default `Bump X from Y to Z` titles are fine - keep them.)
-- Don't add `Co-Authored-By:` lines unless the developer explicitly asks.
-- Don't put release-bump magnitude in the title - no "minor", "patch", "release v1.0.1", etc. Nerdbank.GitVersioning computes the next release version from `version.json` + git history. Dependency versions in dependency-bump titles are fine and expected.
-- Use US English spelling and match the existing heading style of the file you're editing: title case with lowercase short bind words (a, an, the, and, but, or, of, in, on, at, to, by, for, from); hyphenated compounds capitalize both parts unless the second is a short preposition (*Built-in*, *Read-only*, *24-Hour*).
-
-### Examples
-
-```text
-Add the GET /v1/organization endpoint
-Map InvalidDataReadKeyError to HTTP 400 read-key failures
-Return tz-aware UTC datetimes from the timestamp validator
-Bump aiohttp from 3.11.0 to 3.12.0
-Clarify the connection-pooling example in README
+```mermaid
+flowchart TD
+  state["what does this repository currently hold?"]
+  state -->|"no repo, or a local tree with no remote"| standup["hub STANDUP.md, from section 0"]
+  state -->|"no carried instruction set, or a partial one"| standup2["hub STANDUP.md sections 1A, 2"]
+  state -->|"instruction set present, current or stale"| resync["hub RESYNC.md"]
+  state -->|"believes it is conformant"| resync2["hub RESYNC.md, run the audit anyway"]
 ```
 
-## Writing style
+- **No repository yet, or a local tree with no remote.** Follow the hub's `STANDUP.md` from section 0. That file is hub-only and deliberately not carried, because a repository needing it cannot be relied on to hold a current copy. Note that nothing in it creates the GitHub repository, which is an outward-facing write requiring explicit permission, so section 0A is the list handed to the maintainer before anything else starts.
+- **A repository with no carried instruction set, or a partial one.** Carry the baseline per the hub's `STANDUP.md` sections 1A and 2, which resolve what this repository is owed from its declared types and workflow model. Absent files are not drift to re-vendor, they are a baseline that never arrived, and the two are fixed differently.
+- **A repository with the instruction set, current or stale.** Follow the hub's `RESYNC.md`, which runs `AUDIT.md` end to end for the findings and then applies each one in an order that matters, since the rules govern what comes after them, a deletion must precede the re-vendor that would otherwise refresh the file, and only some findings are mechanically detectable at all. An audit that reports drift and stops is half the procedure.
+- **A repository that believes it is conformant.** Run the audit anyway and commit the report, because conformance asserted without a report is conformance nobody can check. This is the same procedure as the case above and is listed separately only because it is the one most often skipped.
 
-Use **US English spelling** in code comments, identifiers, commit messages, PR descriptions, and documentation: *behavior* (not behaviour), *color* (not colour), *recognize* (not recognise), *organize* (not organise), *cancel/canceled* (not cancelled), and so on.
+Three rules bound every path above. **Read the hub's `main` branch as ground truth**, since that is the promoted and gated state, and read `develop` only to detect divergence. **Reach the hub as a checkout of your own and fetch it immediately before reading it**, because a clone is whatever it last fetched rather than the branch it names, and work only in that checkout rather than in one that another task is using, per [`GOVERNANCE.md`](./GOVERNANCE.md) "Repository Boundaries and Write Safety" and "Hub-Hosted Tooling". And **the audit is read-only**: it produces a report and never edits the repository it measures, so a fix is a separate, reviewable change.
 
-**Headings** are title case with lowercase short bind words: a, an, the, and, but, or, of, in, on, at, to, by, for, from. Verbs (including *is/are/was*) and other content words are capitalized. Hyphenated compounds capitalize the second part unless it's a short preposition - *Built-in*, *Read-only*, *24-Hour*.
+## Context and Delegation Discipline
 
-**Markdown style** uses reference-style links with definitions at the bottom of the file for external URLs and any URL referenced more than once. Single-use relative links to local repo files are fine inline. Write one logical paragraph per line - hard-wrapping mid-sentence makes diffs noisier than necessary. Code blocks, tables, and intentional `\` line breaks stay verbatim.
+An agent session is billed on the context it carries, not the work it does. Every request re-reads the whole accumulated context, so a token added early is paid for again on every request that follows, and a long session bills its last task for every earlier one. These are cost rules. None of them licenses doing less work, skipping verification, or shipping something unreviewed.
 
-**Quantitative claims** in [README.md](README.md) and this file (percentages, counts, timings) must be verified against current code or a reproducible measurement before being added or carried forward. When a claim depends on a source-side constant (e.g. the number of mapped error codes in [`src/aiopurpleair/errors.py`](src/aiopurpleair/errors.py)), re-count against the source rather than trusting a prior figure.
+### Session Scope
 
-## Versioning
+- **One deliverable, one session.** A session covers one branch and one deliverable, and ends when that work merges. A multi-step task is one deliverable and stays in one session. Two unrelated tasks are two sessions even when they run back to back.
+- **End a session at any of these, without being asked:** the branch changes, the pull request merges, or the next task is unrelated to the last. A review round is none of them. A loop still producing findings is the deliverable in progress, and a round count is not a reason to leave one open.
+- **A session orchestrating dispatched work is an exception, and a narrow one.** Its deliverable is the run rather than any branch, so it spans many branches and many merges by construction, and ending it at the first dispatched merge would end the run. The triggers above land on each dispatched task instead, one branch and one deliverable each, which is this rule applied rather than waived. What keeps the exception narrow is that such a session holds no branch of its own and authors none of the work it dispatches, so the file context every other session accumulates is context it never takes on, and it re-derives each round's state from live sources rather than holding it, per "Re-derive state, do not carry it" below. A session that starts editing the files a dispatched task would have edited is an ordinary one again and ends on the triggers above.
+- **Hand off in a file, never in context.** Close a session by writing at most 2 KB to a scratch file: branch, pull request link, what is done, the next command, and the account of parked decisions that `GOVERNANCE.md` "Communicating with the User" requires. That section states the account whole, and it requires the session to present those decisions as well as record them. A summary held in context is re-billed until the session ends, and a summary on disk is read once by whoever needs it.
+- **Re-derive state, do not carry it.** "This session already has the context" is the signal to split, not to continue. Context that has gone stale is worse than absent, because a file read hundreds of requests ago no longer describes the file.
+- **Compaction is a fallback, not the strategy.** It restarts context from a floor and climbs again, where a fresh session starts from zero.
 
-The version is derived by [Nerdbank.GitVersioning][nbgv] (NBGV) from [version.json](version.json) and git history - nothing in the committed working tree carries the real version number.
+### Reading
 
-- [version.json](version.json) holds the SemVer base `1.0` (major.minor) and the `publicReleaseRefSpec` regex matching `^refs/heads/main$`. NBGV adds the git commit height as the patch component, and on non-public refs (anything not matching `publicReleaseRefSpec`) appends a `-g{sha}` prerelease segment. So `main` produces clean SemVer like `1.0.5`; `develop` produces prereleases like `1.0.5-g1a2b3c4`.
-- Bump `version.json`'s base `version` field manually only when opening a new major/minor series (e.g. `1.1` or `2.0`). NBGV handles the patch (height) component automatically. **Never create manual tags** - the release pipeline creates the tag.
-- [`src/aiopurpleair/_version.py`](src/aiopurpleair/_version.py) carries a placeholder `__version__` (the single source hatchling reads). Do not hand-edit it to a real version. [`build-release-task.yml`](.github/workflows/build-release-task.yml) `sed`s the NBGV-computed PEP 440 version into it on the runner before `uv build`, so the published wheel carries the real version while git stays clean. On `develop` the build appends `.dev0` so `pip install --pre` prefers the dev build over the main release.
+- **Map a large file, then read one range.** For anything over about 200 lines, list the headings with `grep -n '^## '` first and read only the range the task needs. Read the section, not the file that contains it.
+- **Prefer an in-place edit to a whole-file rewrite.** Rewriting a file bills its full content again on top of what the read already cost.
 
-## PurpleAir API Reference and Coverage
+### Commands
 
-PurpleAir does not publish an OpenAPI/Swagger spec; its docs at <https://api.purpleair.com/> are generated with [apiDoc](https://apidocjs.com/), which serves machine-readable data at `/api_data.js` and `/api_project.js`. [`docs/purpleair-openapi.yaml`](docs/purpleair-openapi.yaml) is reconstructed from that data by [`scripts/generate_openapi.py`](scripts/generate_openapi.py) and is the source of truth for the API surface this library targets. **Don't hand-edit the spec - it is generated.**
+- **Bound output at the source.** Write every command so its output is the answer, not the haystack: a `--jq` projection on an API call, a count or files-only flag on a search, a summary flag on a diff, an explicit cap on anything unbounded. A command whose output you then skim is a command that should have been narrower.
+- **Keep a long query in a file, not in the command.** A heredoc re-typed on every call costs its own length in context each time, often more than the answer it retrieves.
+- **Keep generated caches outside the checkout when the executor restricts writes.** Give each task a cache directory under a writable temporary root. Point tools such as uv and ruff there through their own cache variables. Never repurpose `HOME` or an agent's configuration directory to make a tool run.
+- **Report an execution boundary separately from a check finding.** A denied path, network request, or Docker socket says the check did not run. Preserve that failure, then use the executor's approval mechanism for the required rerun. Request the narrowest reusable command prefix the executor supports. Report the rerun's result as the verification evidence.
 
-- **Regenerate** whenever the upstream API may have changed: `uv run --with pyyaml --with openapi-spec-validator python scripts/generate_openapi.py` (live fetch; writes and validates `docs/purpleair-openapi.yaml`). Pass `--data`/`--project` to run offline from cached `api_data.js`/`api_project.js`. Commit the regenerated spec; a non-empty diff means the upstream API changed and the library's coverage or models may need updating.
-- **Version comes from the changelog, not the metadata.** apiDoc's build version (`api_project.js` `version`) lags the real REST API version, which is published only as a changelog in the `welcome` doc-block. The script takes the real version as the highest semver in that changelog and records the build version in the spec description. Trust the changelog version.
-- **Validate the code against the spec** when adding or changing an endpoint, response model, sensor field, or error class:
-  - Endpoints in [`api.py`](src/aiopurpleair/api.py) / [`endpoints/`](src/aiopurpleair/endpoints/) must map to a spec `paths` entry (path + method). An endpoint the spec lacks is API drift - regenerate first, don't invent it.
-  - `SENSOR_FIELDS` in [`const.py`](src/aiopurpleair/const.py) is the **requestable** `fields` catalog and must be a subset of the live API's accepted values. Note the spec's `components.schemas.SensorDataFields` mixes requestable fields with **response-only** ones: `stats`/`stats_a`/`stats_b` are returned in the sensor payload (and parsed by `SensorModel`) but are **rejected** as `fields` values (`InvalidFieldValueError`), so they must **not** be in `SENSOR_FIELDS`. The live full-catalog test (`test_live_sensors_parse_with_full_field_catalog`) is the guard: it requests every `SENSOR_FIELDS` entry, so an unrequestable field fails it.
-  - The exception classes and `ERROR_CODE_MAP` in [`errors.py`](src/aiopurpleair/errors.py) track the spec's `components.schemas.Error` `error` enum, **plus** the HTTP/auth error codes the spec's per-endpoint `@apiError` blocks omit (API-key, payment, rate-limit, https, data-initializing). Keep both: the spec enum is a documented subset, not the full set the API returns.
-- **Coverage**: all 11 spec paths (API `1.2.0`) are implemented and every response shape is verified against the live API - keys, sensors (list, single, history JSON/CSV), organization, and the full Groups API (groups CRUD, member add/remove, members data, single member, member history CSV). Note: group create/member-add are eventually consistent (a just-created group can 404 the member endpoint for ~10s), so live capture polls until the group settles.
+### Delegation
 
-## Live API validation
+- **Delegate exploration, keep judgment.** A subagent starts from an empty context and returns only its conclusion, so a wide search, a multi-file audit, or a "which of these is affected" question costs a fraction of the same work inline. Delegate when the finding compresses to a short answer, and stay inline when the intermediate detail drives the next edit.
+- **Match the model tier to the judgment, not to the diff size.** Mechanical work (a known-shape edit repeated across files, an extraction, a status check, a lint fix) runs on the cheapest model that does it correctly, at the lowest reasoning effort that holds. State the tier in the delegation itself rather than accepting the default. A change to a gate, a ruleset, a release condition, or a carried governance section is a design change however small it looks.
+- **Never tier down the seat holding the judgment.** Governance wording, spec logic, rulesets, repository visibility, and the decision to decline a review finding are fleet-wide and durable when wrong. Tier the subagents, not the main thread.
+- **Brief a subagent so it never needs a governance file.** A subagent inherits no context, so anything it must honor has to be in its prompt. Reading `GOVERNANCE.md` to find out costs it the same tokens the main thread would have paid. Brief on this shape:
 
-The default suite is fully mocked (aresponses + syrupy) and hits no network. [`tests/test_live_api.py`](tests/test_live_api.py) is an **opt-in** layer that exercises the client against the real PurpleAir API with real credentials - it validates that the modeled fields, error codes, and organization endpoint still match production, including edge cases the mocks can't prove (e.g. an overdrawn account returning a negative `remaining_points`). It is deselected by default and never runs in CI.
+```text
+Task: <the one question or edit, stated so the answer compresses>
+Paths: <exact files or globs - never "find the relevant files">
+Rules that bind this task: <the specific rules, quoted, not a pointer to a doc>
+Return: <the shape of the answer - a list, a diff, a yes/no with evidence>
+Bounds: <what not to touch, and what to do when a rule looks incomplete>
+If a rule you were given does not cover what you find, stop and report it. Do not guess, and do not read a governance file to resolve it.
+```
 
-- **Credentials live in `.env.test`** (repo root, gitignored, `chmod 600`) - a dotenv file of real keys that is **never committed or echoed**. [`.env.test.example`](.env.test.example) is the tracked template; copy it and fill in real values. An alternate path can be given via `AIOPURPLEAIR_TEST_ENV`. Keys must never appear in output: parametrized tests use positional ids (`key1`, `key2`), not the raw key.
-- **Run** (both the env flag and credentials are required, else every live test skips):
+- **Wait in a background process, not in a poll loop.** A review or CI wait is a sequence of near-identical requests, each billed for whatever context it happens to carry. Run the wait as one backgrounded command that returns when the condition is met.
+- **A wait separates three outcomes, and says which one it reached.** The condition was met, it has not been met yet, and the wait cannot reach it at all are three different results, and a backgrounded wait that emits nothing renders all three identically. Run the command once in the foreground and read its output before backgrounding it, because a wait is only as good as the command inside it, and an unsupported flag on the installed tool version exits non-zero with an empty stdout that every naive test reads as "nothing yet". Never let a fallback stand in for a failed command, since `|| echo '[]'`, `|| true`, and `2>/dev/null` convert an error into that same reading, which is the suppression the write-safety rules already forbid on a mutation. Make the wait emit on failure as loudly as on success, so silence means "still running" and nothing else, and bound it, so a condition that is never coming ends in a report rather than in another wait.
 
-  ```sh
-  AIOPURPLEAIR_LIVE_TESTS=1 uv run pytest -m live --no-cov -v
-  ```
+## Where the Rules Live
 
-  Use `--no-cov` because this layer intentionally doesn't drive the 100% coverage gate (that is the mocked suite's job). Omitting the flag or the file leaves the default `uv run pytest` unchanged - live tests skip.
-- **What it checks**: each configured READ key validates via `check_api_key`; the organization endpoint parses for each account (asserting only field *types*, since `remaining_points` may legitimately be negative); each owned sensor parses when **every** `SENSOR_FIELDS` entry is requested (an unknown/unrequestable field would raise, so a clean parse proves the catalog); sensor history JSON+CSV parse (trying each key, since history is gated per key and skips if disabled for all); and a self-cleaning groups round-trip creates a group with the WRITE key, lists it with the same-account READ key, and always deletes it. Uses `PURPLEAIR_API_KEY_WRITE` for writes. When adding an endpoint or field, extend this file so real data exercises it.
+Every rule below is a level-two section of [`GOVERNANCE.md`](./GOVERNANCE.md) unless its row says otherwise. Read the section the task needs.
 
-## PR Review Etiquette
+| Working on | Section |
+| --- | --- |
+| Why the rules are shaped this way | `Foundational Principles` |
+| Recording a durable lesson or updating governance | `Durable Knowledge and Self-Improvement`, surfaced at its decision moment by the `agent-conduct` Skill, and the section keeps the full rules |
+| Any push, API mutation, comment, label, or merge, or which checkout the work happens in | `Repository Boundaries and Write Safety`, its task-isolation rule surfaced at the task-start moment by the `repo-worktree` Skill, and the section keeps the full rules |
+| Quoting data into a comment, commit, test, or doc | `Representative Data in Agent-Authored Text` |
+| Committing, signing, rebasing, force-pushing | `Git and Commit Rules`, packaged as the `git-commit-conventions` Skill |
+| Branch choice, promotion, keeping branches in sync | `Branching Model`, packaged as the `operational-vs-release-workflow` Skill |
+| Releasing, version bumps, publishing | `Release Model`, packaged as the `operational-vs-release-workflow` Skill |
+| A live config repo rather than a code repo | `Operational Repositories`, packaged as the `operational-vs-release-workflow` Skill |
+| Onboarding a repo or running a conformance sweep | `Repository Onboarding and Conformance` (hub only, not carried). Standing up a new repo from a hub checkout is packaged as the `standup-a-repo` Skill, resyncing one already stood up the same way is `resync-a-repo`, and measuring a named repo against the fleet ground truth per `AUDIT.md` is `audit-a-repo`, all hub-context only |
+| Running a fleet gate, the review digest, or the config script | `Hub-Hosted Tooling` |
+| Running a lint or format check locally, or a lint tool missing from `command -v` | `Running the Linters Locally (Known-Working Invocations)` (hub only, not carried) |
+| Running a test locally, or a test runner missing or failing to spawn | `Verification Discipline` |
+| Writing a commit message or pull request title | `Pull Request Title and Commit Message Conventions`, packaged as the `comment-and-doc-style` Skill |
+| Any prose, comment, doc, or line-ending change | `Documentation Style Conventions`, packaged as the `comment-and-doc-style` Skill |
+| Proving work actually happened | `Verification Discipline`, surfaced at its decision moment by the `agent-conduct` Skill, and the section keeps the full rules |
+| Editing rule text, a Skill, or any other content other repos carry | `Verification Discipline`'s carried-content rule, whose pass the `local-strict-review` Skill runs and whose record the hub-hosted `scripts/canonical_review.py` keeps |
+| Opening a pull request, or requesting, monitoring, answering, or closing a review | `PR Review Etiquette`, packaged as the `pr-review-conduct` Skill |
+| Reviewing a pull request, patch, or change set | No section of its own: the `code-review` Skill, which routes to the applicable general, language, documentation, and workflow skills |
+| Reporting progress or asking the user something | `Communicating with the User`, surfaced at its decision moment by the `agent-conduct` Skill, and the section keeps the full rules |
+| Editing a workflow YAML file | `Workflow YAML Conventions`, surfaced with the full `WORKFLOW.md` contract by the `workflow-ci-contract` Skill, with that section keeping the style rules and `WORKFLOW.md` the contract |
+| Choosing an OS, runtime, or toolchain target | `Supported Development Platforms` |
+| The devcontainer | `Devcontainer` |
+| Editor settings and tasks | `Editor and Tasks` |
+| The About panel, description, or repo toggles | `Repository Details` |
+| Where a file belongs in the tree | `Repository Layout` |
 
-> **Mandatory contract.** This entire "PR Review Etiquette" section is the provider-agnostic review-loop *contract*, carried alongside the [`.github/copilot-instructions.md`](./.github/copilot-instructions.md) "GitHub Copilot Review Runbook" that implements it. Without both in-repo, an agent has no pointer to the reliable Copilot mechanics and falls back to ad-hoc (and known-broken) behavior.
+A row above naming no Skill, or naming one only for part of its section, is doc-only by decision rather than by omission, and the reason differs by row. `Foundational Principles` is rationale read once rather than a procedure. `Repository Boundaries and Write Safety` and `Representative Data in Agent-Authored Text` are always-on law that binds whether or not a Skill fires, which is why the boundaries row names `repo-worktree` only for the one moment in it narrow enough to surface, isolating into a worktree at task start, on top of that law rather than instead of it. The `gh-write-guard` hook and the host-wide instruction blocks maintained by the hub's own agent-safety installer, hub-local at `host-setup/agent-safety/`, are the boundaries section's mechanical layer, while the data section has none, since no pattern decides it. `Running the Linters Locally (Known-Working Invocations)` is hub-only, so a carrier reaches it in a hub checkout rather than surfacing it. `Verification Discipline` carries its Skills on its other two rows. And `Hub-Hosted Tooling`, `Supported Development Platforms`, `Devcontainer`, `Editor and Tasks`, `Repository Details`, and `Repository Layout` are short reference sections a task reads at the moment it touches their subject, each already routed to by the procedures and Skills that need it.
 
-The repo runs a review loop on every PR: local agent iteration plus remote automated review (GitHub Copilot is the configured reviewer). Treat this as a contract regardless of which local agent authored the changes.
+Some of the rules above are also packaged as Claude Code / opencode / Codex Skills, hand-authored at `.agents/skills/` in the hub (not a repo-relative link here, since that path is hub-local and not carried into every fleet repo), so they surface automatically instead of needing to be re-read every session. `scripts/` is hub-hosted and reached rather than carried, per "Hub-Hosted Tooling", so run the installer from a hub checkout: `python3 scripts/skills_install.py` (or the `.sh`/`.ps1` wrapper) once per machine, from `github.com/ptr727/ProjectTemplate`, installs them for every repo touched from that machine. `python3 scripts/skills_install.py --report`, also from a hub checkout, says whether this machine is current. A rule that keeps needing to be restated is a sign the install is missing or stale, not that the rule does not exist. Keeping a repo's own carried `.github/copilot-instructions.md` in sync with the hub, without losing that repo's own "Disproved Claims" ledger entries in the process, is `copilot-instructions-keeper`, a skill about maintaining that file rather than a rule extracted from it, since the file itself is read directly by the Copilot bot and stays fully intact everywhere it is carried. Checking, from inside this repo's own session with no operator watching, whether this repo and this machine are actually current against the hub is `fleet-conformance-check`, new content rather than a rule extracted from a section, the counterpart to `resync-a-repo` that needs no standing hub checkout or named target beyond the repo the session is already in, even though its own check fetches a hub checkout to reach `scripts/skills_install.py`. Opening a pull request against a repository outside this fleet, one the maintainer does not control, follows a different workflow entirely, new content rather than a rule extracted from a section, packaged as `upstream-contribution-workflow` and independent of the target repo's own type or workflow model. Isolating a task into its own worktree before its first file edit, with the base-branch choice, the layout convention, and the cleanup mechanics, is `repo-worktree`, the task-start surface of the `Repository Boundaries and Write Safety` law, which keeps the rule. Creating, changing, or retiring one of these skills is itself packaged as `skill-lifecycle`, hub-context only, since `.agents/skills/` exists only in the hub and the generated plugin tree is never hand-edited.
 
-### Merge Gate (read this first)
+Adding or changing a managed host tool is packaged as `add-host-tool`. It keeps the cross-platform contract, installer, documentation, test, and native-verification surfaces together.
 
-**Do not merge - and do not enable auto-merge - unless ALL of these hold:**
+Driving a pull request through its review loop, from a feature branch into `develop` and, when asked, on to a mergeable `develop -> main` promotion PR, disposing of every reviewer finding along the way per `pr-review-conduct`, is packaged as `drive-pr`, new content rather than a rule extracted from a section. Merging a ready promotion PR and dispatching the release it unblocks, refreshing this machine's installed Skills first when the repo is this hub, is `merge-and-release`, its own new-content package, invoked separately from `drive-pr` so the promotion merge and the release dispatch each keep their own explicit go-ahead. Working a whole open-issue backlog down by rounds, ranking the issues, grouping them so no two groups touch the same file, dispatching one subagent per group to drive its own pull request into `develop`, opening at most one `develop -> main` promotion pull request per round, and re-ranking from scratch afterwards because each round's reviews file new issues, is `backlog-burndown`, also new content rather than a rule extracted from a section. It orchestrates `drive-pr` rather than replacing it, and it scopes to the repository the session is in, and a fleet-wide issue sweep is a different request.
 
-1. Required status checks are green (`mergeStateStatus: CLEAN`), **and**
-2. A Copilot review is confirmed on the **current head SHA** (not an earlier push), **and**
-3. **Every** Copilot finding on that head SHA is closed out - all review threads resolved, **and** any issue-level Copilot comments (which have no resolve action) triaged and replied to - so zero outstanding findings remain, **and**
-4. The maintainer has given **explicit** permission to merge.
-
-`mergeStateStatus: CLEAN` reflects **only** required statuses - it never reflects open bot review comments, so `CLEAN` alone is **never** sufficient to merge. A green/`CLEAN` PR with an unresolved Copilot finding fails this gate; treat it as "not mergeable" no matter what the merge-state field says. The agent never merges on its own (consistent with "default to staging"; merging is maintainer-authorized).
-
-**Merging *can* release here - know which merges publish.** Unlike a pull-distributed target, this repo publishes on a **paths-filtered push**: a merge to `main` or `develop` that touches a *shipped* path (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`) triggers [`publish-release.yml`](.github/workflows/publish-release.yml) - `main` -> a stable PyPI release, `develop` -> a `.dev0` prerelease. A merge that touches only docs, tests, or workflow YAML does **not** publish. So before authorizing a merge to a release branch, know whether it hits a shipped path; if it does, the merge *is* a release. Never trigger a `workflow_dispatch` publish without explicit maintainer instruction.
-
-### Expected Review Loop
-
-1. Push changes to the PR branch.
-2. Re-request a review for the **current head SHA**. Auto-trigger is unreliable, so request it explicitly via the `requestReviews` GraphQL mutation (see the runbook); the UI is only a fallback.
-3. Wait for review activity on that head. A completed review that raises **no findings** is a valid terminal outcome for that head - proceed; do not re-trigger it or treat the absence of comments as a missing review.
-4. Triage findings.
-5. Apply fixes or write a rationale for declines.
-6. Reply to each thread and resolve what was addressed.
-7. Re-run the loop after every fix push until no actionable findings remain.
-
-Drive the loop to green - review confirmed on the latest head SHA and every actionable finding closed - then stop and apply the **Merge Gate** above: all four preconditions must hold, and `mergeStateStatus: CLEAN` alone never satisfies it.
-
-For provider-specific mechanics (how to request review, query review state, post replies, resolve threads), see the **GitHub Copilot Review Runbook** in [.github/copilot-instructions.md](./.github/copilot-instructions.md). This file owns the contract; that file owns the mechanics.
-
-### Triaging Review Comments
-
-For each comment, classify before responding:
-
-- **Bug** - wrong behavior, missing test coverage, or a real divergence between code and docs. Fix it. Reply with the fixing commit SHA when done.
-- **Style/convention** - the comment cites a rule from this file or a language-specific style guide. Two cases:
-  - The cited rule matches what the existing codebase already does -> fix the offending code.
-  - The cited rule contradicts what's in the tree, or industry norm -> **update the rule instead of the code**. The rule is wrong, not the code. Bouncing the same code across rounds is the symptom of a wrong rule. Heuristic: three rounds on the same style category means the rule needs adjusting and the user should authorize the rule change.
-- **Architectural opinion** - the comment proposes a different design ("constrain this", "move it elsewhere", "add a runtime guardrail"). This is judgment, not a bug. Surface it to the user with a recommendation; don't apply unilaterally.
-
-### Responding and Resolution Expectations
-
-Reply inline with either the fixing commit SHA (for accepted issues) or a concise rationale (for declines). Resolve review threads when addressed or intentionally declined with rationale. Issue-level comments (those at `repos/.../issues/<N>/comments` rather than tied to a specific line) have no resolution action - acknowledge with a reply if needed and move on.
-
-After the final push on a PR, sweep older threads from earlier rounds whose code paths no longer exist; otherwise stale unresolved markers remain in the review UI.
-
-### Escalating to the User
-
-Bring the user in when:
-
-- **Genuine design trade-off** surfaces (fail-open vs fail-closed, narrow vs broad refactor scope, "should we add a guardrail or trust the docstring"). Triage, recommend, ask.
-- **Repeated friction** across rounds without convergence - that's the rule-needs-updating signal. Stop, summarize the pattern, and let the user authorize the rule change.
-- **Architectural redesign** is requested rather than a bug fix. Surface with a recommendation; never apply unilaterally.
-
-Anti-pattern: don't keep flipping the code on the same style point. Flip the rule once and stick to the rule.
-
-## Reviewing CI / Release-Train Changes
-
-When reviewing a PR that touches [`.github/workflows/`](.github/workflows/) or the release configuration, check the change against these load-bearing invariants. Each one is intentional and was reached after a real failure mode; flag any drift.
-
-- **The publish gate is the same validate suite CI runs.** [`publish-release.yml`](.github/workflows/publish-release.yml)'s `publish-pypi` job `needs:` the `validate` job, which reuses the identical [`validate-task.yml`](.github/workflows/validate-task.yml) (lint + the 3.13/3.14 pytest matrix) that [`test-pull-request.yml`](.github/workflows/test-pull-request.yml) runs. Reject any PR that lets the publish path skip validation, or that forks the publish-time validation into a weaker copy - the PR gate and the publish gate must stay one definition, so nothing publishes that would fail the PR.
-- **Publishing is paths-filtered push plus dispatch - and the paths list is the shipped surface.** The publisher triggers on `push` to `main`/`develop` filtered to `src/aiopurpleair/**`, `pyproject.toml`, `version.json`, and `uv.lock`, plus `workflow_dispatch`. `main` publishes a stable release, `develop` a `.dev0` prerelease. `uv.lock` is deliberately in the list: a PyPI version can't be re-pushed, so a dependency bump must republish to keep the package's declared dependencies current. Reject PRs that drop `uv.lock` from the paths filter (re-opens the stale-dependency window) or that broaden the filter so docs/test/workflow-only changes start publishing.
-- **Publishing is keyless OIDC Trusted Publishing - no stored token.** The `publish-pypi` job runs in the `pypi` environment with `permissions: id-token: write` and uploads via `pypa/gh-action-pypi-publish` over OIDC. There is **no** PyPI API token anywhere. Reject any PR that adds a `password:`/`PYPI_API_TOKEN` secret to the publish step - the Trusted Publisher registration on PyPI plus the `pypi` environment's branch restriction (main/develop) is the whole trust chain.
-- **One required check gates merge, named verbatim.** The single aggregator job is exactly `Check pull request workflow status job`; its name is the ruleset-bound `context:` in [`repo-config/`](repo-config/). Reject a rename that isn't matched by a `repo-config/` change in the same PR (an unmatched rename leaves every PR unmergeable - CI runs but the required check never resolves).
-- **Dependabot auto-merges every tier - the required checks are the gate, not the version bump.** The [merge-bot](.github/workflows/merge-bot-pull-request.yml) enables auto-merge on every Dependabot PR regardless of semver level, **semver-major included**; a bump that breaks a covered path reds the required checks and stays open, rather than every major being held for human review. Reject PRs that re-introduce an `update-type` / `version-update:semver-major` filter on the merge step - it was removed deliberately so that a green suite, not the bump magnitude, decides the merge.
-
-If a reviewer argues for relaxing any of these, escalate to the maintainer rather than implementing - these are explicit user decisions, not lint rules.
-
-## Code style
-
-Full language rules live in [CODESTYLE.md](./CODESTYLE.md) (a General section plus a self-contained Python section). Highlights:
-
-- The toolchain runs through `uv run`: `uv run ruff check` (lint), `uv run ruff format --check` (format verify), `uv run mypy src` (strict, shipped surface only), `uv run pyright` (src + tests, strict on src), `uv run pytest` (tests with a **100% coverage** gate).
-- **A pre-commit hook runs ruff** (`uv run ruff check --fix` + `uv run ruff format`) on staged Python files. Install it with `uvx prek install` (prek, a fast drop-in for pre-commit). It is language formatting only - the doc linters and full checks run in CI and the VS Code Lint tasks.
-- **Tools target the 3.13 floor** (`target-version = "py313"`, `python_version = "3.13"`, `pythonVersion = "3.13"`), so 3.13 compatibility is statically enforced, while CI's pytest matrix exercises both **3.13 and 3.14**.
-- **Snapshot tests use [syrupy][syrupy].** Regenerate them with `uv run pytest --snapshot-update` only when a response model changes intentionally; review the snapshot diff like any other code.
-- Run the lint set plus `uv run pytest` before pushing - `ruff` alone does not cover `mypy` or `pyright`, both of which are CI gates.
-- **Docs also have a CI gate** (the `docs` job in [`validate-task.yml`](.github/workflows/validate-task.yml)): `markdownlint` on all `*.md`, `cspell` on `README.md` + `HISTORY.md`, `actionlint`, and `shellcheck`. **Run these locally; don't skip a check or defer it to CI because a tool isn't installed.** `cspell`/`markdownlint-cli2` are Node tools that may be absent - run the same tool via its official Docker image (CI runs these through GitHub Actions, but the images run the identical binaries):
-
-  ```sh
-  docker run --rm -v "$PWD:/workdir" -w /workdir ghcr.io/streetsidesoftware/cspell:latest --no-progress --config cspell.json README.md HISTORY.md
-  docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest '**/*.md'
-  docker run --rm -v "$PWD:/workdir" -w /workdir rhysd/actionlint:latest -color
-  docker run --rm -v "$PWD:/workdir" -w /workdir koalaman/shellcheck:latest repo-config/configure.sh
-  ```
-
-## Bot identity and secrets
-
-- App: `ptr727-codegen[bot]`. Repo secrets:
-  - `CODEGEN_APP_CLIENT_ID` - the App's Client ID.
-  - `CODEGEN_APP_PRIVATE_KEY` - the App's private key (PEM contents).
-  - These are required in **both** the Actions and Dependabot secret stores: the merge-bot reads them from the Dependabot store when it acts on a Dependabot PR (a Dependabot-triggered run gets the Dependabot store, not Actions secrets).
-  - `CODECOV_TOKEN` - the Codecov upload token the pytest matrix uses. Optional (the upload is best-effort `continue-on-error`), Actions store only.
-- The App authors the auto-merges in [`merge-bot-pull-request.yml`](.github/workflows/merge-bot-pull-request.yml) (Dependabot PRs). The built-in `GITHUB_TOKEN` will not do: its merge commits do not trigger the downstream `publish-release` push, and on a Dependabot PR it is read-only. Generate tokens with `actions/create-github-app-token` - never hard-code or use a PAT.
-- **PyPI publishing is keyless OIDC** (Trusted Publishing) - there is **no** API token. Registration is on PyPI as a pending/trusted publisher for this repo + workflow, plus a `pypi` deployment environment restricted to `main` and `develop`.
-- With no "Require approvals" on `develop`/`main`, bot PRs auto-merge as soon as the required check is green. If approvals get turned on, both `ptr727-codegen[bot]` and `dependabot[bot]` need to be on the bypass list.
-
-## Common tasks
-
-- **Add a feature / fix a bug**: feature branch from `develop` -> code + tests -> `uv run ruff format` + `uv run ruff check --fix` -> `uv run mypy src` + `uv run pyright` -> `uv run pytest` -> PR against `develop` with a descriptive title.
-- **Cut a stable release**: merge `develop -> main` with a merge commit. If the promotion touches a shipped path (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock` - a real code or dependency change does), the paths-filtered push auto-publishes the stable PyPI release. A `workflow_dispatch` on `main` force-publishes the current tip when needed.
-- **Cut a prerelease**: a shipped-path push to `develop` publishes a `.dev0` prerelease automatically; a `workflow_dispatch` on `develop` does it on demand.
-- **Don't manually create GitHub releases or tags.** The pipeline owns this end-to-end.
-- **Add a Dependabot config / new ecosystem**: edit [`.github/dependabot.yml`](.github/dependabot.yml) (each ecosystem is listed twice, once per target branch).
-
-[ha-purpleair]: https://github.com/ptr727/homeassistant-purpleair
-[nbgv]: https://github.com/dotnet/Nerdbank.GitVersioning
-[purpleair]: https://api.purpleair.com/#api-welcome
-[syrupy]: https://github.com/syrupy-project/syrupy
-[upstream]: https://github.com/bachya/aiopurpleair
-[uv]: https://github.com/astral-sh/uv
+Running one read-only, adversarial review pass against a branch's current diff against its target branch, full file context included, on the strongest model tier the session can reach, before a unit of PR-bound work is pushed toward a pull request or claimed done, is packaged as `local-strict-review`, new content rather than a rule extracted from a section. `drive-pr`, `pr-review-conduct`, and `agent-conduct` each reference it at the moment they already govern, rather than restating what it does. The rule itself lives in [`GOVERNANCE.md`](./GOVERNANCE.md) "Verification Discipline", the hub-hosted `scripts/local_review.py` is the engine that records a pass so a capture point can check one, and a repository carrying a `.husky/pre-push` hook enforces it at the push itself, the skill staying the primary and agent-agnostic layer with the hook a bypassable backstop under it. That skill carries a second pass under the same rule, over canonical content this repository authors and others carry, read one whole unit at a time rather than as a diff, because a diff-scoped read leaves the first real review of a rule to whichever repository carries it next, which is the one repository that cannot act on what it finds. `scripts/canonical_review.py` is that pass's engine, and the units the pass has yet to reach are listed in the burn-down that engine's `report` renders from the hub's `reports/canonical-review.json`, not a repo-relative link here since that path is hub-local like the Skills tree above.

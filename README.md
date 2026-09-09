@@ -330,7 +330,7 @@ Regenerate it after an upstream API change:
 uv run --with pyyaml --with openapi-spec-validator python scripts/generate_openapi.py
 ```
 
-The generator takes the API version from the docs' changelog (the apiDoc build-metadata version lags behind), validates the result, and writes `docs/purpleair-openapi.yaml`. A non-empty diff means the upstream API changed. See [`AGENTS.md`](./AGENTS.md) for how the code is validated against the spec.
+The generator takes the API version from the docs' changelog (the apiDoc build-metadata version lags behind), validates the result, and writes `docs/purpleair-openapi.yaml`. A non-empty diff means the upstream API changed. See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for how the code is validated against the spec.
 
 **Coverage**: all 11 paths of the spec (currently API `1.2.0`) are implemented - keys, sensors (list, single, and history JSON/CSV), organization, and the full Groups API (group and member management, member data, and member history). The single-sensor `stats`/`stats_a`/`stats_b` blocks are returned as part of the sensor payload but are not requestable `fields` values, so they are parsed on the response but excluded from the requestable field catalog.
 
@@ -349,7 +349,7 @@ The generator takes the API version from the docs' changelog (the apiDoc build-m
   - Feature branch -> `develop` via **squash merge**; `develop` -> `main` via **merge commit**. Both methods are pinned in the branch rulesets.
   - CI runs on every branch push (there is no `pull_request` trigger); a fork PR's pushes don't run the base-repo check, so a maintainer lands the change on an in-repo branch before merge.
   - Dependabot targets `main` and `develop` in parallel and auto-merges once the required check passes.
-  - See [`WORKFLOW.md`](WORKFLOW.md) and [`AGENTS.md`](AGENTS.md) for the full release flow.
+  - See [`WORKFLOW.md`](WORKFLOW.md) for the CI/CD contract and [`OPERATIONS.md`](OPERATIONS.md) for the release runbooks.
 - **Code style**:
   - [ruff][ruff-link], `mypy`, and `pyright`; see [`CODESTYLE.md`](CODESTYLE.md) and [`.editorconfig`](.editorconfig). Everything runs through `uv run` (with `pytest` at 100% coverage and syrupy snapshots).
 - **Repository setup**:
