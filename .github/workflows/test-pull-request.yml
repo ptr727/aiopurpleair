@@ -41,8 +41,10 @@ jobs:
       publish: false
       branch: ${{ github.ref_name }}
 
-  # Single required status check. Its name is the ruleset-bound context in repo-config/ruleset-*.json. Do not
-  # rename it without updating those in lockstep. Must succeed, not merely not-fail.
+  # Single required status check. Its name is the context the live branch rulesets require, applied from the
+  # hub's payloads rather than from the record in repo-config/. Renaming it starts at the hub, never here, so
+  # a local rename alone leaves every pull request unmergeable. See OPERATIONS.md "Release-Train Invariants".
+  # Must succeed, not merely not-fail.
   check-workflow-status:
     name: Check pull request workflow status job
     runs-on: ubuntu-latest
