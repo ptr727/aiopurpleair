@@ -26,7 +26,7 @@ Read section 4 for what the pipeline must do, and section 5 for how to prove it 
 aiopurpleair ships **one target**: the PyPI distribution **`ptr727-aiopurpleair`** (a wheel + sdist), built from the library source in [`src/aiopurpleair/`](./src/aiopurpleair/). PyPI is a **push** distributor - a consumer pins the package and `pip install`s it - so a fresh release should reach PyPI as soon as a shippable change lands, without a manual step for the common case. Two workflows do the work:
 
 - **CI** ([`test-pull-request.yml`](./.github/workflows/test-pull-request.yml)) runs on **push to every branch**: it validates (lint + the 3.13/3.14 pytest matrix) and proves the wheel + sdist build (a smoke build), publishing nothing. A pull request merges only when its one required check is green.
-- **The publisher** ([`publish-release.yml`](./.github/workflows/publish-release.yml)) runs on a **paths-filtered push** to `main`/`develop` and on **`workflow_dispatch`**. A push (or dispatch) on `main` cuts a **stable** release (clean PEP 440 `X.Y.Z`); on `develop` a **prerelease** (`X.Y.Z.dev0`). It re-runs the identical validate suite, builds and versions once, cuts a GitHub release, and uploads to PyPI over **OIDC Trusted Publishing** - no stored token.
+- **The publisher** ([`publish-release.yml`](./.github/workflows/publish-release.yml)) runs on a **paths-filtered push to `main`** and on **`workflow_dispatch`**, and a first `plan` job decides whether the run publishes at all. It publishes on a **bot** code-merge to `main`, or on a dispatch of `main` or `develop`. A **human** merge to `main` publishes nothing. `main` cuts a **stable** release (clean PEP 440 `X.Y.Z`) and `develop` a **prerelease** (`X.Y.Z.dev0`), always by dispatch. When it does publish it re-runs the identical validate suite, builds and versions once, cuts a GitHub release, and uploads to PyPI over **OIDC Trusted Publishing** with no stored token.
 
 There is no two-branch matrix: one run builds, versions, and publishes exactly its own trigger ref. Dependabot pull requests merge themselves once their checks pass, on both branches.
 
@@ -37,7 +37,7 @@ There is no two-branch matrix: one run builds, versions, and publishes exactly i
 - **Target** - the one shipped output: the PyPI wheel + sdist `ptr727-aiopurpleair`, built by [`build-release-task.yml`](./.github/workflows/build-release-task.yml) and uploaded by `publish-release`'s `publish-pypi` job.
 - **Validate task** - [`validate-task.yml`](./.github/workflows/validate-task.yml): the `lint` job (`ruff check`, `ruff format --check`, `mypy src`, `pyright`) plus the `test` job (the 3.13/3.14 pytest matrix, 100% coverage, syrupy snapshots, best-effort Codecov upload). CI runs it on every push; the publisher runs the **identical** task before any release.
 - **Smoke build** - a `build-release-task` run with `smoke: true`/`publish: false` that builds the wheel + sdist to prove the release pipeline still produces a valid package, uploading and publishing nothing. Its `validate-release` version gate is skipped on smoke.
-- **Shipped path** - the paths-filter inclusion list on the publisher's push trigger: `src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`. A push touching one of these to `main`/`develop` publishes; a docs/test/workflow-only push does not.
+- **Shipped path** - the paths-filter inclusion list on the publisher's push trigger: `src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`. Touching one of these on a **bot** merge to `main` publishes, and a docs, test, or workflow-only merge does not. The filter decides whether the workflow runs, and the `plan` job then decides whether it publishes.
 - **Shipped version** - NBGV's version, computed from `version.json` (SemVer base `1.0`) plus git height. `main` is the public ref (clean `X.Y.Z`); every other branch carries NBGV's `-g{sha}` prerelease segment. The PEP 440 package version is derived from it (`develop` -> `.dev0`) and `sed`-stamped into `_version.py` at build.
 - **GitHub App token** - a short-lived installation token from `actions/create-github-app-token`, minted from `CODEGEN_APP_CLIENT_ID` / `CODEGEN_APP_PRIVATE_KEY`. The merge-bot uses it, not `GITHUB_TOKEN`: a `GITHUB_TOKEN` merge does not trigger the downstream publish push, and that token is read-only on Dependabot PRs.
 
@@ -57,11 +57,11 @@ Legibility rules. Necessary but not sufficient: a perfectly styled workflow can 
 
 ### Two workflows: CI on push, publishing on push-plus-dispatch
 
-CI ([`test-pull-request.yml`](./.github/workflows/test-pull-request.yml)) and the publisher ([`publish-release.yml`](./.github/workflows/publish-release.yml)) are separate workflows with separate concurrency, so they never race. CI re-tests every pushed tree and never publishes; the publisher releases on a shipped-path push (or a dispatch) to a release branch. *Prevents a CI run from racing a publish on the same ref.*
+CI ([`test-pull-request.yml`](./.github/workflows/test-pull-request.yml)) and the publisher ([`publish-release.yml`](./.github/workflows/publish-release.yml)) are separate workflows with separate concurrency, so they never race. CI re-tests every pushed tree and never publishes, and the publisher releases on a bot shipped-path merge to `main` or on a deliberate dispatch. *Prevents a CI run from racing a publish on the same ref.*
 
-### The publisher is scoped by branch and by path
+### The publisher is scoped by branch, by path, and by who pushed
 
-A publish happens on a `push` to `main`/`develop` filtered to the shipped paths (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`), or on a `workflow_dispatch`. The trigger ref alone decides the version class: `main` -> stable clean SemVer, `develop` -> `.dev0` prerelease. The paths filter is deliberate - a docs, test, or workflow-only push to a release branch does not consume a version. `uv.lock` is in the list because a PyPI version cannot be re-pushed, so a dependency bump must republish to keep the package's declared dependencies current, closing the stale-dependency window. *Prevents both a no-op republish on a docs change and a silently stale dependency set after a lock bump.*
+The workflow runs on a `push` to `main` filtered to the shipped paths (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`), or on a `workflow_dispatch`. Whether that run **publishes** is the `plan` job's decision, and it turns on the actor as well as the ref: a bot merge to `main` publishes, a human merge does not, and a dispatch of `main` or `develop` does. The ref then decides the version class: `main` -> stable clean SemVer, `develop` -> `.dev0` prerelease. The paths filter is deliberate, so a docs, test, or workflow-only push to a release branch does not consume a version. `uv.lock` is in the list because a PyPI version cannot be re-pushed, so a dependency bump must republish to keep the package's declared dependencies current, closing the stale-dependency window. *Prevents both a no-op republish on a docs change and a silently stale dependency set after a lock bump.*
 
 ### Validate is one definition, run by both entry points
 
@@ -119,11 +119,15 @@ flowchart TD
     classDef stop fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
 ```
 
-**Publish - `publish-release.yml` -> `build-release-task.yml`.** A shipped-path push to `main`/`develop`, or a dispatch, runs the same validate suite, versions once, cuts the GitHub release, and uploads to PyPI over OIDC (D2, D3, D4).
+**Publish, `publish-release.yml` into `build-release-task.yml`.** A run the `plan` job clears, meaning a bot shipped-path merge to `main` or a dispatch, runs the same validate suite, versions once, cuts the GitHub release, and uploads to PyPI over OIDC (D2, D3, D4).
 
 ```mermaid
 flowchart TD
-    P(["push main/develop touching shipped paths<br/>src/**, pyproject.toml, version.json, uv.lock<br/>(or workflow_dispatch)"]):::trig --> VAL["validate job<br/>(validate-task.yml)<br/>lint + pytest matrix"]
+    P(["push main touching shipped paths<br/>src/**, pyproject.toml, version.json, uv.lock<br/>(or workflow_dispatch)"]):::trig --> PLAN
+    PLAN{"plan job<br/>publish-plan-task.yml<br/>bot push to main, or dispatch of main/develop?"}:::gate
+    PLAN -- "no (human push to main)" --> NOP(["::warning:: unrecognized actor<br/>nothing publishes"]):::stop
+    PLAN -- "dispatch from another ref" --> DX(["fail ::error::<br/>refuse to publish"]):::stop
+    PLAN -- "yes" --> VAL["validate job<br/>(validate-task.yml)<br/>lint + pytest matrix"]
     VAL --> BUILD
     subgraph BUILD ["build-release-task.yml (publish: true)"]
         GV["get-version job<br/>NBGV @master, runs once<br/>SemVer2 + AFV + Prerelease"] --> VR{"validate-release job<br/>branch vs version class agree?"}:::gate
@@ -131,7 +135,7 @@ flowchart TD
         VR -- "yes" --> BD["build job<br/>sed version into _version.py<br/>uv build, upload artifact"]
         BD --> REL[("GitHub release<br/>tag = SemVer2 at GitCommitId<br/>prerelease = ref != main<br/>wheel + sdist attached")]:::pub
     end
-    REL --> PP["publish-pypi job<br/>needs validate + build"]
+    REL --> PP["publish-pypi job<br/>needs validate + publish"]
     PP --> PYPI[("PyPI upload<br/>OIDC Trusted Publishing<br/>pypi env, id-token: write<br/>no stored token, skip-existing")]:::pub
     classDef trig fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
     classDef gate fill:#fef9c3,stroke:#ca8a04,color:#713f12
@@ -139,7 +143,7 @@ flowchart TD
     classDef stop fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
 ```
 
-**Automation - Dependabot + merge-bot.** Dependabot opens PRs on both branches; the merge-bot enables auto-merge (or disables it on a maintainer push). A merged shipped-path bump publishes on the resulting push; an actions-only bump does not (D6).
+**Automation, Dependabot plus the merge-bot.** Dependabot opens PRs on both branches, and the merge-bot enables auto-merge (or disables it on a maintainer push). A bump merged to `main` that touches a shipped path publishes on the resulting push, because the merge-bot's App identity is what the `plan` job allowlists. An Actions-only bump does not, and neither does a bump merged to `develop` (D8).
 
 ```mermaid
 flowchart TD
@@ -152,7 +156,7 @@ flowchart TD
     EN --> CK{"required check passes?"}:::gate
     CK -- "yes" --> MRG(["PR merges (App token, --delete-branch)"]):::pub
     CK -- "no" --> BLK(["merge blocked<br/>maintainer notified"]):::stop
-    MRG -. "shipped-path push?" .-> PUB(["yes -> publishes; actions-only -> no publish"]):::pub
+    MRG -. "merged to main, shipped path?" .-> PUB(["yes -> plan clears it, publishes<br/>actions-only, or merged to develop -> no publish"]):::pub
     classDef trig fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
     classDef gate fill:#fef9c3,stroke:#ca8a04,color:#713f12
     classDef pub fill:#dcfce7,stroke:#16a34a,color:#14532d
@@ -199,7 +203,7 @@ The required behaviors, organized by domain. Each is a **MUST**, and its `Output
 ### D6 - Seam / Architecture Conformance
 
 - **D6.1 CI and the publisher are separate, and each builds one branch.** Output: `test-pull-request` and `publish-release` are separate workflows with separate concurrency, so they never race. CI validates exactly `github.ref_name` and publishes nothing, and the publisher versions, builds, and tags exactly its own trigger ref. The `build` to `publish-pypi` handoff is by artifact `name:`, not `artifact-ids:`. *Prevents: cross-branch ref mixing, and a CI run racing a publish on the same ref.*
-- **D6.2 Branch drives config.** **Recorded drift.** `build-release-task` reads `inputs.branch` for the artifact name and the PEP 440 `.dev0` derivation, but reads `github.ref_name` for `validate-release`'s `REF_NAME` and for the release's `prerelease` expression. Today **both** callers, the publisher's `build` job and CI's `smoke-build` job, pass `branch: ${{ github.ref_name }}`, so the two reads agree and nothing misbehaves. They would diverge the moment a caller passed a different branch: the version gate and the release flag would follow the run's ref while the wheel suffix and the artifact name followed the input, cutting a stable-marked release for a `.dev0` wheel and then failing to download an artifact named for the other branch. *Prevents, where satisfied: a task behaving differently depending on how it was reached.*
+- **D6.2 Branch drives config.** **Recorded drift.** `build-release-task` reads `inputs.branch` for the artifact name and the PEP 440 `.dev0` derivation, but reads `github.ref_name` for `validate-release`'s `REF_NAME` and for the release's `prerelease` expression. Today **both** callers, the publisher's `publish` job and CI's `smoke-build` job, pass `branch: ${{ github.ref_name }}`, so the two reads agree and nothing misbehaves. They would diverge the moment a caller passed a different branch: the version gate and the release flag would follow the run's ref while the wheel suffix and the artifact name followed the input, cutting a stable-marked release for a `.dev0` wheel and then failing to download an artifact named for the other branch. *Prevents, where satisfied: a task behaving differently depending on how it was reached.*
 
 ### D7 - Concurrency, Permissions, Safety
 
