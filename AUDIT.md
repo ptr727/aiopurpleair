@@ -30,7 +30,7 @@ This repository's profile is fixed, so no classification step is needed:
 Evaluate each applicable check at two tiers: **letter** (the exact file, section, or config is present) and **intent** (an equivalent outcome holds even where the form differs).
 
 - **python** - ruff, mypy, and pyright present and canonical in [`pyproject.toml`][pyproject]. A standalone `.ruff.toml` or `mypy.ini` is a drift finding. The pytest coverage gate is 100% on the mocked suite, above the fleet's report-only default, and that is deliberate.
-- **branch-model** - `main` and `develop` both exist and are protected, and the live rulesets match the **hub's** ruleset payloads by normalized diff, which is what the section 4 command compares against. The copies in [`repo-config/`][repo-config] are this repository's own record of the same shape and are not the comparison source.
+- **branch-model** - `main` and `develop` both exist and are protected, and the live rulesets match the **hub's** ruleset payloads by normalized diff, which is what the section 4 command compares against. This repository keeps no ruleset payloads of its own, so the hub's are the single source and there is no second copy to drift.
 - **repo-setup** - every required secret is configured, no forbidden secret is present, and the `pypi` deployment environment restricts publishing to the release branches. The required set is `CODEGEN_APP_CLIENT_ID`, `CODEGEN_APP_PRIVATE_KEY`, and `CODECOV_TOKEN`, each in **both** the Actions and Dependabot stores, since a Dependabot-triggered run reads the Dependabot store rather than Actions secrets. A missing `CODECOV_TOKEN` is a **defect** at this dimension even though the upload step itself is `continue-on-error`, so its absence degrades coverage reporting rather than reddening CI, per [`OPERATIONS.md`][operations] "Configuration Layout". PyPI publishing is keyless OIDC, so a `PYPI_API_TOKEN` in either store is a **defect**, not an omission. The environment check is section 4's, and it is the one part of this dimension no script covers.
 - **linter-parity** - one config per linter ([`.markdownlint-cli2.jsonc`][markdownlint], [`cspell.json`][cspell], ruff/mypy/pyright in [`pyproject.toml`][pyproject], [`.editorconfig`][editorconfig]) drives the editor extension, the CLI, and CI alike, and CI runs each.
 - **recurring-violations** (always run), covering comments concise and non-narrative, US spelling, and line endings per [`.editorconfig`][editorconfig], verified with `git ls-files --eol`. Each is a grep-able check.
@@ -38,7 +38,7 @@ Evaluate each applicable check at two tiers: **letter** (the exact file, section
 
 ## 4. Validate Settings, Rulesets, Secrets, and the Publish Environment
 
-Settings, labels, and the ruleset payloads are applied by the hub-hosted `repo-config/configure.sh`. Run it **from a hub checkout at `main`**, which is the copy that takes the repository and model as arguments, rather than from any copy carried in this repository:
+Settings, labels, and the ruleset payloads are the hub's, applied by its `repo-config/configure.sh` against its own payloads. **This repository carries no `repo-config/` directory**, which is the fleet's model rather than an omission, so run the command from a hub checkout at `main`, passing this repository and its model as arguments:
 
 ```shell
 # cwd is a hub checkout of github.com/ptr727/ProjectTemplate, at main
@@ -58,7 +58,7 @@ gh api --paginate repos/ptr727/aiopurpleair/dependabot/secrets --jq '.secrets[].
 
 Expect `CODEGEN_APP_CLIENT_ID`, `CODEGEN_APP_PRIVATE_KEY`, and `CODECOV_TOKEN` in **both** stores. A Dependabot-triggered run reads the Dependabot store rather than Actions secrets, which is why the Codecov token is copied there too. Expect none of `CODEGEN_APP_ID`, `PYPI_API_TOKEN`, or `TWINE_PASSWORD` in either store: the first is the deprecated App input, and the other two would contradict keyless OIDC publishing. `spec/audit.py aiopurpleair`, run from the same hub checkout, asserts exactly this set from the hub's `spec/secrets.json`, so a disagreement between this paragraph and that run is a defect in this paragraph.
 
-Confirm the `pypi` deployment environment by hand. It is the GitHub half of the OIDC publish gate, it is what stops a dispatch from an unintended ref minting a publish token, and **no script checks it**: the hub's script manages no environment at all, and the carried script that once asserted this was retired with the rest of the local repository configuration. Compare against [`repo-config/environment-pypi.json`](./repo-config/environment-pypi.json), which records the intended state:
+Confirm the `pypi` deployment environment by hand. It is the GitHub half of the OIDC publish gate, it is what stops a dispatch from an unintended ref minting a publish token, and **no script checks it**: the hub's script manages no environment at all, and the carried script that once asserted this was retired with the rest of the local repository configuration. **This paragraph is the intended state**, since no payload records it any more:
 
 ```shell
 gh api repos/ptr727/aiopurpleair/environments/pypi --jq '.deployment_branch_policy'
@@ -98,6 +98,5 @@ The audit is read-only. Converging is the follow-on phase, and the hub's `RESYNC
 [markdownlint]: ./.markdownlint-cli2.jsonc
 [operations]: ./OPERATIONS.md
 [pyproject]: ./pyproject.toml
-[repo-config]: ./repo-config/
 [workflow]: ./WORKFLOW.md
 [workflows]: ./.github/workflows/

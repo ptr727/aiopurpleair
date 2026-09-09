@@ -269,7 +269,6 @@ Every repo's GitHub repository details (the About panel) follow a fixed conventi
 - [`tests/`](./tests/): the mocked default suite (aresponses + syrupy snapshots) plus the opt-in live layer in [`tests/test_live_api.py`](./tests/test_live_api.py).
 - [`docs/`](./docs/): [`purpleair-openapi.yaml`](./docs/purpleair-openapi.yaml), the generated spec that is the source of truth for the API surface this library targets. Generated, never hand-edited.
 - [`scripts/`](./scripts/): this repo's own tooling, currently [`generate_openapi.py`](./scripts/generate_openapi.py), which reconstructs that spec. Distinct from the hub's `scripts/`, which is hub-hosted and reached rather than carried, per "Hub-Hosted Tooling".
-- [`repo-config/`](./repo-config/): this repo's branch-ruleset and deployment-environment payloads, kept out of `.github/` (which is Actions-owned). The apply script that consumes them is hub-hosted.
 - [`.github/workflows/`](./.github/workflows/): the PR gate, the merge bot, and the PyPI publisher. [`WORKFLOW.md`](./WORKFLOW.md) is the contract they implement.
 
 After editing a doc, run the linters (see "Running the Linters Locally (Known-Working Invocations)", a hub-only section read in a hub checkout rather than carried into every fleet repo) before commit. The Comments, Character Set, and Line Endings rules above are the frequent regressions, so hold them exactly.
