@@ -9,10 +9,7 @@ that it selects for the changed files. GitHub Copilot reads these files from the
 head branch, so review the instructions in that tree.
 
 Do not duplicate rules from `AGENTS.md`, `GOVERNANCE.md`, `CODESTYLE.md`, or `WORKFLOW.md` here.
-This file contains only Copilot-specific bootstrap and output requirements. This repository's own
-conventions and behavioral contracts live in [OPERATIONS.md](../OPERATIONS.md) and
-[ARCHITECTURE.md](../ARCHITECTURE.md), not here, because agents other than Copilot are not
-directed to this file and a rule a reviewer must honor has to sit in an agent-agnostic document.
+This file contains only Copilot-specific bootstrap and output requirements.
 
 ## Commit Messages and Pull Request Titles
 
@@ -50,8 +47,10 @@ For every review:
    no valid inline anchor exists.
 5. End the review body with the exact machine-readable marker required by the `code-review` skill.
 
-The review automation is `scripts/pr_review.py`. It is hosted centrally rather than carried here,
-so run it from a checkout of the repository that hosts it, passing `--repo ptr727/aiopurpleair`.
+The review automation is `scripts/pr_review.py`. It is hub-hosted rather than carried here, so run
+it from a checkout of the hub, the repository [AGENTS.md](../AGENTS.md) "Fleet Bootstrap" names,
+passing `--repo ptr727/aiopurpleair`. [GOVERNANCE.md "Hub-Hosted Tooling"](../GOVERNANCE.md#hub-hosted-tooling)
+states why a tool is reached rather than copied, and how to reach one.
 Use its `status`, `wait`, `comment`, and `reply --resolve` commands instead of reconstructing
 GraphQL queries or copying review identifiers by hand. Use `comment` for a suppressed-finding
 answer in the pull request conversation. Its status gate verifies the current head, diff coverage,
@@ -63,6 +62,17 @@ unresolved thread, or body-only finding blocks the review loop. Re-run the loop 
 push. Never infer review completion from `mergeStateStatus: CLEAN`.
 
 Review effort is user-controlled. The automation observes `Lite`, `Balanced`, or `Max`, including an inherited `Default (<level>)`, and never selects or changes the setting. Effort does not determine coverage or completion. A request can complete without a `copilot_work_started` event, so absence of that event is not a stalled-review verdict. When `wait` returns `PENDING` with `requested=yes`, report the state and rerun `wait` for another bounded interval by default. Do not clear the request automatically because it may be active. If the maintainer directs a retry, remove Copilot in the pull request UI, add it again, and rerun `wait`. This recovery replaces only the review request and never changes the effort setting.
+
+**Editing a pull request description or title: use the REST API, not `gh pr edit`.** `gh pr edit --body`
+or `--title` issues a GraphQL mutation that touches the deprecated Projects (classic) `projectCards`
+field and fails before applying the change, and it fails silently, so the edit never lands while the
+command reports success. A stale description is a real and recurring review finding, so verify the
+edit took. Update through REST instead:
+
+```sh
+gh api -X PATCH repos/ptr727/aiopurpleair/pulls/<N> -F body=@body.md
+gh api -X PATCH repos/ptr727/aiopurpleair/pulls/<N> -f title='...'
+```
 
 ### Disproved Claims
 
