@@ -45,7 +45,7 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           SMOKE: ${{ inputs.smoke }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           # Smoke never publishes, so the publish-time branch/version gate does not apply. Smoke also runs on
           # branches whose classification will not match an eventual publish target (a feature-branch smoke
           # reads prerelease and would trip the main arm of a main-base PR), so skip it on smoke.
@@ -98,7 +98,7 @@ jobs:
           SEMVER2: ${{ needs.get-version.outputs.SemVer2 }}
           BRANCH: ${{ inputs.branch }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           base="${SEMVER2%%-*}"
           if [[ "$BRANCH" == "develop" ]]; then
             version="${base}.dev0"
@@ -114,7 +114,7 @@ jobs:
         env:
           VERSION: ${{ steps.pypiver.outputs.version }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           sed -i 's/^__version__ = .*/__version__ = "'"$VERSION"'"/' src/aiopurpleair/_version.py
 
       - name: Build sdist and wheel step
