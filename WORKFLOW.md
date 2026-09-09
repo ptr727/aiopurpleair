@@ -8,14 +8,13 @@ The section numbering and the D-item numbering follow the fleet contract, so a r
 
 ## Adaptation
 
-This repo is a **`uv`-managed Python library** on the **`release`** workflow model with **`releaseTrigger: publish-on-merge`**, shipping **one target**: the PyPI distribution `ptr727-aiopurpleair`. An item of the contract governing a construct this repo does not have is **recorded N/A, not failed**.
+This repo is a **`uv`-managed Python library** on the **`release`** workflow model, shipping **one target**: the PyPI distribution `ptr727-aiopurpleair`. An item of the contract governing a construct this repo does not have is **recorded N/A, not failed**.
 
-- **`publish-on-merge` today, and that is an unfinished migration rather than an adaptation.** A shipped-path push to `main` or `develop` publishes that branch, so **a human merge can and does auto-publish here**. `GOVERNANCE.md` "Release Model" states the fleet's two-phase default, and this repo has not adopted it: the change gating publishing to bot merges of `main` was written on 2026-07-10 and never landed, while the same change landed in LanguageTags, Utilities and PlexCleaner, each of which now runs `plan`, `validate` and `publish` against the hub's `publish-plan-task.yml`. The registry's `releaseTrigger: publish-on-merge` records that reality rather than an intended divergence. Read the rest of this file's release items as describing the current state, with the fleet default as the end state. `OPERATIONS.md` "Review and Merge Preconditions" is the operational form of the same fact.
-- **Applicable scenarios:** S1 through S13 in section 5.
+- **Two-phase, matching the fleet.** A **human merge never auto-cuts a release**. Publishing happens on a code-merge to `main` by an **allowlisted** bot, meaning `ptr727-codegen[bot]` or `dependabot[bot]`, or on a deliberate `workflow_dispatch` of `main` or `develop`. Any other actor pushing to `main` gets a `::warning::` and no release, which is D8.4's requirement rather than an accident of the allowlist. The decision has one definition, the hub's `publish-plan-task.yml`, which every job in the publisher gates on. This repo reached that late: the change was written on 2026-07-10 and landed only now, after LanguageTags, Utilities and PlexCleaner. The registry entry still reads `releaseTrigger: publish-on-merge` and is owed an update to match.
+- **Applicable scenarios:** S1 through S14 in section 5.
 - **Recorded N/A** (single target, no Docker **image**, no wrapper, no deploy): **D1.1** and **D1.4** (a paths-filter over multiple targets, this repo smoke-builds its one target on every push), **D3.5** (no upstream-version tracker), **D4.6** (no deploy to an owned host), **D5.2**, **D5.3**, **D5.5** and **D5.6** (there is no delete step here for D5.2 to gate or D5.3 to make best-effort, no cleanup broad enough for D5.5, and no durable destination beyond PyPI, whose versions are immutable), **D6.3** and **D6.4** (one target, so no branch-suffix collision surface and no add/drop matrix), **D7.4** (no optional-dependency chaining), **D8.3** (no tracker), and **D9.4** (no Docker layer cache).
 - **Default branch is `main`.** The default-branch literals name it identically, and a divergence is a defect: the `prerelease` expression (`!= 'main'`), the PEP 440 `.dev0` branch test, and [`version.json`](./version.json)'s `publicReleaseRefSpec` (`^refs/heads/main$`).
 - **NBGV owns the release tag** although nothing is compiled. The .NET SDK is pulled in solely as the versioning toolchain.
-- **Recorded drift, with its backstop.** **D2.3** is not satisfied in the YAML: a `workflow_dispatch` carries no fail-fast guard on the trigger ref. The `pypi` deployment environment is restricted to `main` and `develop`, so an out-of-policy dispatch is refused at the environment rather than at entry. The failure is late and loud instead of early and loud, which is a weaker form of the same guarantee.
 
 ## 1. Purpose and How to Use This Document
 
@@ -23,10 +22,10 @@ Read section 4 for what the pipeline must do, and section 5 for how to prove it 
 
 ### The Model at a Glance
 
-aiopurpleair ships **one target**: the PyPI distribution **`ptr727-aiopurpleair`** (a wheel + sdist), built from the library source in [`src/aiopurpleair/`](./src/aiopurpleair/). PyPI is a **push** distributor - a consumer pins the package and `pip install`s it - so a fresh release should reach PyPI as soon as a shippable change lands, without a manual step for the common case. Two workflows do the work:
+aiopurpleair ships **one target**: the PyPI distribution **`ptr727-aiopurpleair`** (a wheel + sdist), built from the library source in [`src/aiopurpleair/`](./src/aiopurpleair/). PyPI is a **push** distributor, meaning a consumer pins the package and `pip install`s it, so a shippable change is worth getting to PyPI promptly. A dependency bump gets there unattended, since the merge-bot merges it under an allowlisted identity. A change you promote yourself is released by dispatching the publisher, which is the deliberate step the two-phase model asks for. Two workflows do the work:
 
 - **CI** ([`test-pull-request.yml`](./.github/workflows/test-pull-request.yml)) runs on **push to every branch**: it validates (lint + the 3.13/3.14 pytest matrix) and proves the wheel + sdist build (a smoke build), publishing nothing. A pull request merges only when its one required check is green.
-- **The publisher** ([`publish-release.yml`](./.github/workflows/publish-release.yml)) runs on a **paths-filtered push** to `main`/`develop` and on **`workflow_dispatch`**. A push (or dispatch) on `main` cuts a **stable** release (clean PEP 440 `X.Y.Z`); on `develop` a **prerelease** (`X.Y.Z.dev0`). It re-runs the identical validate suite, builds and versions once, cuts a GitHub release, and uploads to PyPI over **OIDC Trusted Publishing** - no stored token.
+- **The publisher** ([`publish-release.yml`](./.github/workflows/publish-release.yml)) runs on a **paths-filtered push to `main`** and on **`workflow_dispatch`**, and a first `plan` job decides whether the run publishes at all. It publishes on a code-merge to `main` by an **allowlisted** bot (`ptr727-codegen[bot]` or `dependabot[bot]`), or on a dispatch of `main` or `develop`. A merge to `main` by anyone outside that allowlist publishes nothing, a human and an unrecognized App alike. `main` cuts a **stable** release (clean PEP 440 `X.Y.Z`), by an allowlisted bot's merge or by dispatch, and `develop` cuts a **prerelease** (`X.Y.Z.dev0`) by dispatch only, since no push to `develop` reaches a trigger. When it does publish it re-runs the identical validate suite, builds and versions once, cuts a GitHub release, and uploads to PyPI over **OIDC Trusted Publishing** with no stored token.
 
 There is no two-branch matrix: one run builds, versions, and publishes exactly its own trigger ref. Dependabot pull requests merge themselves once their checks pass, on both branches.
 
@@ -37,7 +36,7 @@ There is no two-branch matrix: one run builds, versions, and publishes exactly i
 - **Target** - the one shipped output: the PyPI wheel + sdist `ptr727-aiopurpleair`, built by [`build-release-task.yml`](./.github/workflows/build-release-task.yml) and uploaded by `publish-release`'s `publish-pypi` job.
 - **Validate task** - [`validate-task.yml`](./.github/workflows/validate-task.yml): the `lint` job (`ruff check`, `ruff format --check`, `mypy src`, `pyright`) plus the `test` job (the 3.13/3.14 pytest matrix, 100% coverage, syrupy snapshots, best-effort Codecov upload). CI runs it on every push; the publisher runs the **identical** task before any release.
 - **Smoke build** - a `build-release-task` run with `smoke: true`/`publish: false` that builds the wheel + sdist to prove the release pipeline still produces a valid package, uploading and publishing nothing. Its `validate-release` version gate is skipped on smoke.
-- **Shipped path** - the paths-filter inclusion list on the publisher's push trigger: `src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`. A push touching one of these to `main`/`develop` publishes; a docs/test/workflow-only push does not.
+- **Shipped path** - the paths-filter inclusion list on the publisher's push trigger: `src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`. Touching one of these on an **allowlisted bot** merge to `main` publishes, and a docs, test, or workflow-only merge does not. The filter governs the **push** trigger only, so it decides whether a merge starts a run at all. A `workflow_dispatch` carries no paths filter and always starts one. Either way the `plan` job is what decides whether that run publishes.
 - **Shipped version** - NBGV's version, computed from `version.json` (SemVer base `1.0`) plus git height. `main` is the public ref (clean `X.Y.Z`); every other branch carries NBGV's `-g{sha}` prerelease segment. The PEP 440 package version is derived from it (`develop` -> `.dev0`) and `sed`-stamped into `_version.py` at build.
 - **GitHub App token** - a short-lived installation token from `actions/create-github-app-token`, minted from `CODEGEN_APP_CLIENT_ID` / `CODEGEN_APP_PRIVATE_KEY`. The merge-bot uses it, not `GITHUB_TOKEN`: a `GITHUB_TOKEN` merge does not trigger the downstream publish push, and that token is read-only on Dependabot PRs.
 
@@ -57,11 +56,11 @@ Legibility rules. Necessary but not sufficient: a perfectly styled workflow can 
 
 ### Two workflows: CI on push, publishing on push-plus-dispatch
 
-CI ([`test-pull-request.yml`](./.github/workflows/test-pull-request.yml)) and the publisher ([`publish-release.yml`](./.github/workflows/publish-release.yml)) are separate workflows with separate concurrency, so they never race. CI re-tests every pushed tree and never publishes; the publisher releases on a shipped-path push (or a dispatch) to a release branch. *Prevents a CI run from racing a publish on the same ref.*
+CI ([`test-pull-request.yml`](./.github/workflows/test-pull-request.yml)) and the publisher ([`publish-release.yml`](./.github/workflows/publish-release.yml)) are separate workflows with separate concurrency, so they never race. CI re-tests every pushed tree and never publishes, and the publisher releases on an allowlisted bot's shipped-path merge to `main`, or on a deliberate dispatch. *Prevents a CI run from racing a publish on the same ref.*
 
-### The publisher is scoped by branch and by path
+### The publisher is scoped by branch, by path, and by who pushed
 
-A publish happens on a `push` to `main`/`develop` filtered to the shipped paths (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`), or on a `workflow_dispatch`. The trigger ref alone decides the version class: `main` -> stable clean SemVer, `develop` -> `.dev0` prerelease. The paths filter is deliberate - a docs, test, or workflow-only push to a release branch does not consume a version. `uv.lock` is in the list because a PyPI version cannot be re-pushed, so a dependency bump must republish to keep the package's declared dependencies current, closing the stale-dependency window. *Prevents both a no-op republish on a docs change and a silently stale dependency set after a lock bump.*
+The workflow runs on a `push` to `main` filtered to the shipped paths (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`), or on a `workflow_dispatch`. Whether that run **publishes** is the `plan` job's decision, and it turns on the actor as well as the ref: a merge to `main` by `ptr727-codegen[bot]` or `dependabot[bot]` publishes, any other actor's merge does not, and a dispatch of `main` or `develop` does. The ref then decides the version class: `main` -> stable clean SemVer, `develop` -> `.dev0` prerelease. The paths filter is deliberate, so a docs, test, or workflow-only push to a release branch does not consume a version. `uv.lock` is in the list because a PyPI version cannot be re-pushed, so a dependency bump must republish to keep the package's declared dependencies current, closing the stale-dependency window. *Prevents both a no-op republish on a docs change and a silently stale dependency set after a lock bump.*
 
 ### Validate is one definition, run by both entry points
 
@@ -119,11 +118,15 @@ flowchart TD
     classDef stop fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
 ```
 
-**Publish - `publish-release.yml` -> `build-release-task.yml`.** A shipped-path push to `main`/`develop`, or a dispatch, runs the same validate suite, versions once, cuts the GitHub release, and uploads to PyPI over OIDC (D2, D3, D4).
+**Publish, `publish-release.yml` into `build-release-task.yml`.** A run that the `plan` job clears, meaning an allowlisted bot's shipped-path merge to `main` or a dispatch, runs the same validate suite, versions once, cuts the GitHub release, and uploads to PyPI over OIDC (D2, D3, D4).
 
 ```mermaid
 flowchart TD
-    P(["push main/develop touching shipped paths<br/>src/**, pyproject.toml, version.json, uv.lock<br/>(or workflow_dispatch)"]):::trig --> VAL["validate job<br/>(validate-task.yml)<br/>lint + pytest matrix"]
+    P(["push main touching shipped paths<br/>src/**, pyproject.toml, version.json, uv.lock<br/>(or workflow_dispatch)"]):::trig --> PLAN
+    PLAN{"plan job<br/>publish-plan-task.yml<br/>allowlisted bot push to main,<br/>or dispatch of main/develop?"}:::gate
+    PLAN -- "no (any other actor pushing to main)" --> NOP(["::warning:: unrecognized actor<br/>nothing publishes"]):::stop
+    PLAN -- "dispatch from another ref" --> DX(["fail ::error::<br/>refuse to publish"]):::stop
+    PLAN -- "yes" --> VAL["validate job<br/>(validate-task.yml)<br/>lint + pytest matrix"]
     VAL --> BUILD
     subgraph BUILD ["build-release-task.yml (publish: true)"]
         GV["get-version job<br/>NBGV @master, runs once<br/>SemVer2 + AFV + Prerelease"] --> VR{"validate-release job<br/>branch vs version class agree?"}:::gate
@@ -131,7 +134,7 @@ flowchart TD
         VR -- "yes" --> BD["build job<br/>sed version into _version.py<br/>uv build, upload artifact"]
         BD --> REL[("GitHub release<br/>tag = SemVer2 at GitCommitId<br/>prerelease = ref != main<br/>wheel + sdist attached")]:::pub
     end
-    REL --> PP["publish-pypi job<br/>needs validate + build"]
+    REL --> PP["publish-pypi job<br/>needs validate + publish"]
     PP --> PYPI[("PyPI upload<br/>OIDC Trusted Publishing<br/>pypi env, id-token: write<br/>no stored token, skip-existing")]:::pub
     classDef trig fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
     classDef gate fill:#fef9c3,stroke:#ca8a04,color:#713f12
@@ -139,7 +142,7 @@ flowchart TD
     classDef stop fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
 ```
 
-**Automation - Dependabot + merge-bot.** Dependabot opens PRs on both branches; the merge-bot enables auto-merge (or disables it on a maintainer push). A merged shipped-path bump publishes on the resulting push; an actions-only bump does not (D6).
+**Automation, Dependabot plus the merge-bot.** Dependabot opens PRs on both branches, and the merge-bot enables auto-merge (or disables it on a maintainer push). A bump merged to `main` that touches a shipped path publishes on the resulting push, because the merge-bot's App identity is what the `plan` job allowlists. An Actions-only bump does not, and neither does a bump merged to `develop` (D8).
 
 ```mermaid
 flowchart TD
@@ -152,7 +155,7 @@ flowchart TD
     EN --> CK{"required check passes?"}:::gate
     CK -- "yes" --> MRG(["PR merges (App token, --delete-branch)"]):::pub
     CK -- "no" --> BLK(["merge blocked<br/>maintainer notified"]):::stop
-    MRG -. "shipped-path push?" .-> PUB(["yes -> publishes; actions-only -> no publish"]):::pub
+    MRG -. "merged to main, shipped path?" .-> PUB(["yes -> plan clears it, publishes<br/>actions-only, or merged to develop -> no publish"]):::pub
     classDef trig fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
     classDef gate fill:#fef9c3,stroke:#ca8a04,color:#713f12
     classDef pub fill:#dcfce7,stroke:#16a34a,color:#14532d
@@ -174,7 +177,7 @@ The required behaviors, organized by domain. Each is a **MUST**, and its `Output
 
 - **D2.1 Validate before expensive work.** Output: `build-release-task`'s `validate-release` job asserts the branch and version class agree before any build, and the `build` job `needs:` it. *Prevents: spending a build on a tree that is already misclassified.*
 - **D2.2 Release branch matches version classification.** Input: a real (non-smoke) release build. Output: the gate fails loudly if `main` carries a prerelease `-` segment, or a non-`main` branch carries none. On a smoke build the **check exits early while the job still reports success**, read as the validation being skipped rather than the job, since a job-level `if:` would skip dependents with it. **The early exit's recorded rationale does not hold as written.** The comment in `build-release-task.yml` used to explain it as a feature branch tripping the `main` arm, which does not hold: the gate keys on `REF_NAME: ${{ github.ref_name }}`, so a smoke on `feature/x` never enters that arm and passes the prerelease arm on its own `-g<sha>` suffix. That comment now records the real position. The exit is therefore defensive rather than load-bearing on any trigger this repo has today. It is recorded here rather than removed, because removing a guard whose justification is merely unreachable is a separate and deliberate change. *Prevents: a `develop` build published as stable, and the gate blocking every promotion PR.*
-- **D2.3 Publish only from `main` or `develop`.** **Recorded drift.** Output today: no entry-level guard rejects a dispatch from another ref. The `pypi` deployment environment is restricted to `main` and `develop`, so the publish is refused there instead. See "Adaptation" above. *Prevents, where satisfied: cutting a release from an unintended branch.*
+- **D2.3 Publish only from `main` or `develop`.** Input: a dispatch publish. Output: the `plan` job fails fast with `::error::` on a dispatch from any other ref, before any build runs. The `pypi` deployment environment's branch restriction remains underneath as defense in depth. *Prevents: cutting a release from an unintended branch.*
 
 ### D3 - Versioning and Classification
 
@@ -185,7 +188,7 @@ The required behaviors, organized by domain. Each is a **MUST**, and its `Output
 
 ### D4 - Release / Publish
 
-- **D4.1 Gated single-branch publish.** Output: PRs smoke-test and publish nothing. `publish-release` triggers are a `push` to `main` or `develop` filtered to the shipped paths (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`), plus `workflow_dispatch`. The trigger ref alone decides the version class. A docs, test, or workflow-only push does not publish. `uv.lock` is in the list because a PyPI version cannot be re-pushed, so a dependency bump must republish to keep the declared dependency set current. **A human merge to a release branch does publish here today**, which the fleet default forbids and which the pending migration in "Adaptation" is what closes. *Prevents: a no-op republish on a non-shipping change, and a silently stale dependency set after a lock bump.*
+- **D4.1 Gated single-branch publish.** Output: PRs smoke-test and publish nothing, and **a human merge never auto-publishes**. A first `plan` job decides once and every job gates on its output: publish on a **code-affecting push to `main` by an allowlisted bot**, the allowlist being `ptr727-codegen[bot]` and `dependabot[bot]` compared against `github.actor`, or on a **dispatch** of `main` or `develop`. **Any** other actor pushing to `main` emits a `::warning::` naming it and publishes nothing, a human and a renamed or newly installed App alike, so a release bot under a new identity fails loudly rather than silently. The `push` trigger is `main`-only and filtered to the shipped paths (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`), so a docs, test, or workflow-only merge marks nothing. `uv.lock` is in the list because a PyPI version cannot be re-pushed, so a dependency bump must republish to keep the declared dependency set current. A `develop` prerelease is a deliberate dispatch rather than a consequence of a merge. Each run builds one branch. *Prevents: a no-op republish on a non-shipping change, a silently stale dependency set after a lock bump, and a promotion merge shipping a release nobody asked for.*
 - **D4.2 Tag the built commit.** Output: the `build` and `github-release` jobs check out `needs.get-version.outputs.GitCommitId`, and the release `target_commitish` is that SHA rather than a branch name, so the package, the tag, and the bundled files all match the commit NBGV versioned even if the branch advances mid-run. The `prerelease` boolean is `github.ref_name != 'main'`. *Prevents: a race between versioning and building, and a develop release's tag landing on main's tip.*
 - **D4.3 Release contents.** Output: every release is a tag on the built commit plus auto-generated notes, with the wheel and sdist, `LICENSE`, and `README.md` attached under `fail_on_unmatched_files: true`. *Prevents: a release missing its artifact.*
 - **D4.4 No-op republish, and keyless upload.** Output: `publish-pypi` runs in the `pypi` environment with `permissions: id-token: write` and uploads via `pypa/gh-action-pypi-publish` over **OIDC Trusted Publishing**, under `skip-existing: true`, so the server dedupes a version that already exists rather than failing the run. There is **no** stored PyPI token, and the Trusted Publisher registration plus the environment's branch restriction is the whole trust chain. *Prevents: a leaked publish credential, since there is none to leak, and a hard failure on a re-run of an unchanged version.*
@@ -199,7 +202,7 @@ The required behaviors, organized by domain. Each is a **MUST**, and its `Output
 ### D6 - Seam / Architecture Conformance
 
 - **D6.1 CI and the publisher are separate, and each builds one branch.** Output: `test-pull-request` and `publish-release` are separate workflows with separate concurrency, so they never race. CI validates exactly `github.ref_name` and publishes nothing, and the publisher versions, builds, and tags exactly its own trigger ref. The `build` to `publish-pypi` handoff is by artifact `name:`, not `artifact-ids:`. *Prevents: cross-branch ref mixing, and a CI run racing a publish on the same ref.*
-- **D6.2 Branch drives config.** **Recorded drift.** `build-release-task` reads `inputs.branch` for the artifact name and the PEP 440 `.dev0` derivation, but reads `github.ref_name` for `validate-release`'s `REF_NAME` and for the release's `prerelease` expression. Today **both** callers, the publisher's `build` job and CI's `smoke-build` job, pass `branch: ${{ github.ref_name }}`, so the two reads agree and nothing misbehaves. They would diverge the moment a caller passed a different branch: the version gate and the release flag would follow the run's ref while the wheel suffix and the artifact name followed the input, cutting a stable-marked release for a `.dev0` wheel and then failing to download an artifact named for the other branch. *Prevents, where satisfied: a task behaving differently depending on how it was reached.*
+- **D6.2 Branch drives config.** **Recorded drift.** `build-release-task` reads `inputs.branch` for the artifact name and the PEP 440 `.dev0` derivation, but reads `github.ref_name` for `validate-release`'s `REF_NAME` and for the release's `prerelease` expression. Today **both** callers, the publisher's `publish` job and CI's `smoke-build` job, pass `branch: ${{ github.ref_name }}`, so the two reads agree and nothing misbehaves. They would diverge the moment a caller passed a different branch: the version gate and the release flag would follow the run's ref while the wheel suffix and the artifact name followed the input, cutting a stable-marked release for a `.dev0` wheel and then failing to download an artifact named for the other branch. *Prevents, where satisfied: a task behaving differently depending on how it was reached.*
 
 ### D7 - Concurrency, Permissions, Safety
 
@@ -232,16 +235,17 @@ Evaluate every job's `if:` and `needs:` against the scenario's inputs, staticall
 | S1 | push touching `src/aiopurpleair/**` on a feature branch | `validate` runs the full suite and `smoke-build` builds the package, **no publish**, aggregator success | D1.2, D1.3, D6.1 |
 | S2 | push changing only docs on a feature branch | `validate` runs all three jobs including `docs`, `smoke-build` runs, nothing publishes, aggregator success **only if the docs job passes** | D1.2 |
 | S3 | push changing only `.github/workflows/**` | the changed reusable workflow is exercised head-resolved (self-test), aggregator success | D1.2, D1.5 |
-| S4 | shipped-path push to `main` | `validate` passes, `build` cuts a **stable** `X.Y.Z` GitHub release at the built SHA, and `publish-pypi` uploads over OIDC | D3.2, D4.1, D4.2, D4.4 |
-| S5 | shipped-path push to `develop` | publishes a **prerelease** `X.Y.Z.dev0` with `prerelease=true`, tagged at the develop SHA | D3.4, D4.1, D4.2 |
-| S6 | docs-only push to `main` | the paths filter excludes it, so **nothing publishes** | D4.1 |
+| S4 | shipped-path **bot** merge to `main` | `plan` returns `publish=true`, `validate` passes, `publish` cuts a **stable** `X.Y.Z` GitHub release at the built SHA, and `publish-pypi` uploads over OIDC | D3.2, D4.1, D4.2, D4.4 |
+| S5 | `workflow_dispatch` on `develop` | publishes a **prerelease** `X.Y.Z.dev0` with `prerelease=true`, tagged at the develop SHA. A push to `develop` reaches no trigger at all | D3.4, D4.1, D4.2 |
+| S6 | docs-only merge to `main`, or any **human** merge to `main` | the paths filter excludes the first and `plan` returns `publish=false` for the second, with a `::warning::`, so **nothing publishes** either way | D4.1, D8.4 |
 | S7 | `workflow_dispatch` on `main` | force-publishes the current `main` tip as a stable release | D4.1, D4.2 |
 | S8 | PR with a ruff, mypy, pyright, pytest, markdownlint, cspell, EditorConfig, actionlint, or shellcheck failure | the owning `validate-task` job reds, so `validate` reds and the aggregator blocks the merge | D1.2, D1.5 |
 | S9 | a branch is **deleted** (push, all-zeros SHA) | the `!github.event.deleted` guard skips both CI jobs and the aggregator, so no failed run and no pending required check | D1.2, D1.5 |
-| S10 | Dependabot semver-major `uv` bump merged to `develop` | the merge-bot auto-merges on green, and the `uv.lock` change is a shipped path, so it republishes `.dev0` | D8.1, D8.2, D4.1 |
+| S10 | Dependabot semver-major `uv` bump merged to `main` | the merge-bot auto-merges on green under the App identity, and the `uv.lock` change is a shipped path, so `plan` returns `publish=true` and a stable release is cut | D8.1, D8.2, D4.1 |
 | S11 | Dependabot github-actions bump merged | the merge-bot auto-merges, and a workflow-only path, so **no publish** | D8.2, D4.1 |
 | S12 | a `main` version carrying a stray prerelease `-` segment | `validate-release` fails with `::error::`, so nothing publishes | D2.1, D2.2 |
 | S13 | re-dispatch of an unchanged version | the GitHub release is refreshed on the same tag with no duplicate, and the PyPI upload is a server-side no-op under `skip-existing` | D4.4 |
+| S14 | `workflow_dispatch` from a ref other than `main` or `develop` | `plan` fails fast with `::error::`, and no job downstream of it runs | D2.3 |
 
 ## 6. Configuration and Verification
 
