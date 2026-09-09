@@ -3,11 +3,14 @@
 # Root config
 root = true
 
-# Defaults - CRLF by default so files are correct on both Windows and Linux (LF-only
-# confuses Windows tooling); only execution-sensitive scripts are pinned to LF below.
+# Defaults: LF is the default, and only the CRLF exception below is declared.
+# Windows GUI editors read and write LF cleanly, and the toolchain (uv, ruff, Dependabot, Actions)
+# already produces LF, so a CRLF default only churned against tooling that normalized it back.
+# `.gitattributes` mirrors these two defaults as git's normalization fallback.
+# CI verifies the committed bytes against this file (editorconfig-checker).
 [*]
 charset = utf-8
-end_of_line = crlf
+end_of_line = lf
 indent_size = 4
 indent_style = space
 insert_final_newline = true
@@ -21,15 +24,7 @@ trim_trailing_whitespace = false
 [*.{yml,yaml}]
 indent_size = 2
 
-# Workflow YAML is LF: Dependabot and Actions rewrite it with LF, so declaring LF keeps it consistent instead of
-# mixed. git still leaves endings alone (`* -text`); this and CI (editorconfig-checker) enforce it. Other YAML is CRLF.
-[.github/workflows/*.{yml,yaml}]
-end_of_line = lf
-
-# Shell scripts must stay LF - a CRLF shebang breaks execution on Linux. Covers
-# both *.sh and the executables in scripts/ (matched by no extension rule).
-[*.sh]
-end_of_line = lf
-
-[scripts/*]
-end_of_line = lf
+# Windows batch and command scripts: the one CRLF exception to the `[*]` LF default above.
+# This repo ships none today, and the block is carried so the exception is declared where a reader looks for it.
+[*.{bat,cmd}]
+end_of_line = crlf
