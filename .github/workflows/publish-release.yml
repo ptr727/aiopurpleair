@@ -1,11 +1,13 @@
 name: Publish project release action
 
 # Gated publisher, where a human merge never auto-cuts a release.
-# Only a bot code-merge to main does, plus a manual dispatch.
+# Only a push to main by an allowlisted bot does, plus a manual dispatch.
 # The plan job is the single source of the release gate, and every job below gates on its output.
-# It publishes on a bot-authored push to main, the codegen App merging every bot PR so github.actor is its identity.
+# The allowlist is exactly ptr727-codegen[bot] and dependabot[bot], compared against github.actor.
+# The codegen App merges every bot PR, which is how a Dependabot bump reaches PyPI unattended.
 # It also publishes on a workflow_dispatch of main or develop.
-# A human push to main is annotated and does not publish.
+# Any other actor pushing to main is annotated and does not publish, a renamed or newly installed App included.
+# That annotation is required rather than incidental, since a release bot under a new identity would otherwise stop publishing silently.
 # The push trigger is main-only and filtered to the shipped inputs in on.push.paths below.
 # Those are the library source, the package metadata, the version floor, and the locked dependency set.
 # The locked dependency set is listed because a PyPI release cannot be re-pushed for the same version.
