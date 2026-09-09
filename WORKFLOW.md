@@ -8,14 +8,13 @@ The section numbering and the D-item numbering follow the fleet contract, so a r
 
 ## Adaptation
 
-This repo is a **`uv`-managed Python library** on the **`release`** workflow model with **`releaseTrigger: publish-on-merge`**, shipping **one target**: the PyPI distribution `ptr727-aiopurpleair`. An item of the contract governing a construct this repo does not have is **recorded N/A, not failed**.
+This repo is a **`uv`-managed Python library** on the **`release`** workflow model, shipping **one target**: the PyPI distribution `ptr727-aiopurpleair`. An item of the contract governing a construct this repo does not have is **recorded N/A, not failed**.
 
 - **Two-phase, matching the fleet.** A **human merge never auto-cuts a release**. Publishing happens on a bot code-merge to `main`, or on a deliberate `workflow_dispatch` of `main` or `develop`. The decision has one definition, the hub's `publish-plan-task.yml`, which every job in the publisher gates on. This repo reached that late: the change was written on 2026-07-10 and landed only now, after LanguageTags, Utilities and PlexCleaner. The registry entry still reads `releaseTrigger: publish-on-merge` and is owed an update to match.
 - **Applicable scenarios:** S1 through S14 in section 5.
 - **Recorded N/A** (single target, no Docker **image**, no wrapper, no deploy): **D1.1** and **D1.4** (a paths-filter over multiple targets, this repo smoke-builds its one target on every push), **D3.5** (no upstream-version tracker), **D4.6** (no deploy to an owned host), **D5.3**, **D5.5** and **D5.6** (there is no cleanup step to be best-effort or over-broad, and no durable destination beyond PyPI, whose versions are immutable), **D6.3** and **D6.4** (one target, so no branch-suffix collision surface and no add/drop matrix), **D7.4** (no optional-dependency chaining), **D8.3** (no tracker), and **D9.4** (no Docker layer cache).
 - **Default branch is `main`.** The default-branch literals name it identically, and a divergence is a defect: the `prerelease` expression (`!= 'main'`), the PEP 440 `.dev0` branch test, and [`version.json`](./version.json)'s `publicReleaseRefSpec` (`^refs/heads/main$`).
 - **NBGV owns the release tag** although nothing is compiled. The .NET SDK is pulled in solely as the versioning toolchain.
-- **Recorded drift, with its backstop.** **D2.3** is not satisfied in the YAML: a `workflow_dispatch` carries no fail-fast guard on the trigger ref. The `pypi` deployment environment is restricted to `main` and `develop`, so an out-of-policy dispatch is refused at the environment rather than at entry. The failure is late and loud instead of early and loud, which is a weaker form of the same guarantee.
 
 ## 1. Purpose and How to Use This Document
 
