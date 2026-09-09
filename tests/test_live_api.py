@@ -3,8 +3,8 @@
 These tests hit the live API with real credentials, so they are excluded from
 the default suite: they run only when ``AIOPURPLEAIR_LIVE_TESTS=1`` is set and
 credentials are available (from ``.env.test`` in the repo root, the path in
-``AIOPURPLEAIR_TEST_ENV``, or the environment). See AGENTS.md
-"Live API validation".
+``AIOPURPLEAIR_TEST_ENV``, or the environment). See OPERATIONS.md
+"Live API Validation".
 
 Run::
 
@@ -61,7 +61,7 @@ pytestmark = [
     pytest.mark.live,
     pytest.mark.skipif(
         not (_LIVE and _API_KEYS),
-        reason="set AIOPURPLEAIR_LIVE_TESTS=1 and provide .env.test (see AGENTS.md 'Live API validation')",
+        reason="set AIOPURPLEAIR_LIVE_TESTS=1 and provide .env.test (see OPERATIONS.md 'Live API Validation')",
     ),
 ]
 

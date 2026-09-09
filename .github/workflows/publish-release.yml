@@ -1,20 +1,22 @@
 name: Publish project release action
 
-# Branch-scoped self-publisher: a push to main or develop that changes a shipped input, or a manual dispatch,
-# publishes that branch.
-#
-# - Trigger: a push that changes a shipped input (the on.push.paths inclusion list below - library source,
-#   package metadata, version floor, or the locked dependency set), or a workflow_dispatch on the target
-#   branch. uv.lock is listed: a PyPI release cannot be re-pushed for the same version, so a dependency bump
-#   must republish to keep the package's declared dependencies current - this closes the stale/vulnerable
-#   window.
-# - Output: main publishes a stable release, develop a .dev0 prerelease. A dispatch force-publishes its branch.
-# - Gate: publish-pypi needs the same validate-task the PR runs, so nothing publishes that would fail
-#   validation, on any path (push, dispatch, or force-push).
-# - The merge-bot merges with an App token, so its merge commits reach this push trigger.
+# Gated publisher, where a human merge never auto-cuts a release.
+# Only a push to main by an allowlisted bot does, plus a manual dispatch.
+# The plan job is the single source of the release gate, and every job below gates on its output.
+# The allowlist is exactly ptr727-codegen[bot] and dependabot[bot], compared against github.actor.
+# The codegen App merges every bot PR, which is how a Dependabot bump reaches PyPI unattended.
+# It also publishes on a workflow_dispatch of main or develop.
+# Any other actor pushing to main is annotated and does not publish, a renamed or newly installed App included.
+# That annotation is required rather than incidental, since a release bot under a new identity would otherwise stop publishing silently.
+# The push trigger is main-only and filtered to the shipped inputs in on.push.paths below.
+# Those are the library source, the package metadata, the version floor, and the locked dependency set.
+# The locked dependency set is listed because a PyPI release cannot be re-pushed for the same version.
+# A dependency bump must therefore republish to keep the declared dependencies current, closing the stale dependency window.
+# A develop prerelease is a deliberate dispatch rather than a consequence of a merge.
+# The publish job needs the same validate-task the pull request runs, so nothing publishes that would fail validation.
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'src/aiopurpleair/**'
       - 'pyproject.toml'
@@ -30,18 +32,31 @@ concurrency:
 
 jobs:
 
-  # The same lint + test gate the PR runs. publish-pypi needs it, so a failing test or lint blocks the release.
+  # Single source of the release-gate decision, publish or not and stable or not, reused by every job below.
+  # Hosted in the hub rather than carried, so the policy has one definition across the fleet.
+  plan:
+    name: Plan release job
+    uses: ptr727/ProjectTemplate/.github/workflows/publish-plan-task.yml@6c88850128629bb449fd73c7fbf82968c6cd1557 # 2.0.587
+    with:
+      event_name: ${{ github.event_name }}
+      actor: ${{ github.actor }}
+      ref_name: ${{ github.ref_name }}
+
+  # The same lint + test gate the PR runs, on the branch tip, running only when a publish will happen.
   validate:
     name: Validate job
+    needs: [plan]
+    if: ${{ needs.plan.outputs.publish == 'true' }}
     uses: ./.github/workflows/validate-task.yml
     secrets: inherit
 
   # Build, version, validate, and cut the GitHub release for the triggering branch, and upload the wheel +
   # sdist for publish-pypi. Grants the write scope the github-release job needs (the task declares none, so
   # the read-only smoke caller is not forced to over-grant).
-  build:
-    name: Build project release job
-    needs: validate
+  publish:
+    name: Publish project release job
+    needs: [plan, validate]
+    if: ${{ needs.plan.outputs.publish == 'true' && needs.validate.result == 'success' }}
     uses: ./.github/workflows/build-release-task.yml
     secrets: inherit
     permissions:
@@ -55,7 +70,7 @@ jobs:
   # The pypi environment's deployment branch rule restricts uploads to main + develop as defense in depth.
   publish-pypi:
     name: Publish PyPI library job
-    needs: [validate, build]
+    needs: [validate, publish]
     runs-on: ubuntu-latest
     environment:
       name: pypi

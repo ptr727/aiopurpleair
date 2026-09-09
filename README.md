@@ -1,6 +1,6 @@
-# PurpleAir Library
+# aiopurpleair
 
-Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
+Async Python client library for the PurpleAir air-quality sensor API.
 
 ## Build and Distribution
 
@@ -37,63 +37,6 @@ Python client library for [PurpleAir][purpleair-link] air-quality sensors API.
 
 See [Release History](./HISTORY.md) for complete release notes and older versions.
 
-## Table of Contents
-
-- [PurpleAir Library](#purpleair-library)
-  - [Build and Distribution](#build-and-distribution)
-    - [Build Status](#build-status)
-    - [Releases](#releases)
-    - [Release Notes](#release-notes)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Installation](#installation)
-  - [Getting Started](#getting-started)
-  - [Usage](#usage)
-    - [Checking an API Key](#checking-an-api-key)
-    - [Getting Sensors](#getting-sensors)
-    - [Getting Sensor History](#getting-sensor-history)
-    - [Getting the Organization](#getting-the-organization)
-    - [Working with Groups](#working-with-groups)
-    - [Error Handling](#error-handling)
-    - [Connection Pooling](#connection-pooling)
-  - [Build Artifacts](#build-artifacts)
-  - [API Reference](#api-reference)
-  - [Questions or Issues](#questions-or-issues)
-  - [Contributing](#contributing)
-  - [Credits](#credits)
-  - [License](#license)
-
-## Features
-
-Full async coverage of the PurpleAir API, each method mirroring a documented endpoint:
-
-- **Keys** - validate an API key and read its type (`GET /v1/keys`), via `api.keys.async_check_api_key()`.
-- **Sensors** - one sensor, many sensors by field selection, or a distance-sorted nearby search, plus a map-URL helper (`GET /v1/sensors`, `GET /v1/sensors/{sensor_index}`), via `api.sensors`.
-- **Sensor history** - historical time series for a sensor as parsed JSON or raw CSV (`GET /v1/sensors/{sensor_index}/history[/csv]`), via `api.sensors`.
-- **Organization** - the account's remaining API points and consumption rate (`GET /v1/organization`), via `api.organizations`.
-- **Groups** - create, list, inspect, and delete groups; add and remove member sensors; read member sensor data and member history CSV (`/v1/groups*`), via `api.groups`.
-- **Typed errors** - each documented API error code maps to a specific `PurpleAirError` subclass, so callers catch a precise condition instead of parsing `str(err)`.
-- Timezone-aware UTC datetimes and typed Pydantic response models, shipped with a `py.typed` marker.
-- Modern packaging: hatchling, uv, automatic versioning, OIDC-published releases, and 100% test coverage.
-
-## Installation
-
-**Project integration**:
-
-```shell
-# Add the package to your project
-pip install ptr727-aiopurpleair
-```
-
-```python
-# Import the library (the import name stays `aiopurpleair`)
-import aiopurpleair
-```
-
-**Dependencies**:
-
-Requires Python 3.13 or later (tested on 3.13 and 3.14), and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
-
 ## Getting Started
 
 Get started with aiopurpleair in two easy steps:
@@ -123,6 +66,64 @@ Get started with aiopurpleair in two easy steps:
 
     asyncio.run(main())
     ```
+
+## Table of Contents
+
+- [aiopurpleair](#aiopurpleair)
+  - [Build and Distribution](#build-and-distribution)
+    - [Build Status](#build-status)
+    - [Releases](#releases)
+    - [Release Notes](#release-notes)
+  - [Getting Started](#getting-started)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Checking an API Key](#checking-an-api-key)
+    - [Getting Sensors](#getting-sensors)
+    - [Getting Sensor History](#getting-sensor-history)
+    - [Getting the Organization](#getting-the-organization)
+    - [Working with Groups](#working-with-groups)
+    - [Error Handling](#error-handling)
+    - [Connection Pooling](#connection-pooling)
+  - [Build Artifacts](#build-artifacts)
+  - [API Reference](#api-reference)
+  - [Questions or Issues](#questions-or-issues)
+  - [Contributing](#contributing)
+  - [3rd Party Tools](#3rd-party-tools)
+  - [Credits](#credits)
+  - [License](#license)
+
+## Overview
+
+Full async coverage of the PurpleAir API, each method mirroring a documented endpoint:
+
+- **Keys** - validate an API key and read its type (`GET /v1/keys`), via `api.keys.async_check_api_key()`.
+- **Sensors** - one sensor, many sensors by field selection, or a distance-sorted nearby search, plus a map-URL helper (`GET /v1/sensors`, `GET /v1/sensors/{sensor_index}`), via `api.sensors`.
+- **Sensor history** - historical time series for a sensor as parsed JSON or raw CSV (`GET /v1/sensors/{sensor_index}/history[/csv]`), via `api.sensors`.
+- **Organization** - the account's remaining API points and consumption rate (`GET /v1/organization`), via `api.organizations`.
+- **Groups** - create, list, inspect, and delete groups; add and remove member sensors; read member sensor data and member history CSV (`/v1/groups*`), via `api.groups`.
+- **Typed errors** - each documented API error code maps to a specific `PurpleAirError` subclass, so callers catch a precise condition instead of parsing `str(err)`.
+- Timezone-aware UTC datetimes and typed Pydantic response models, shipped with a `py.typed` marker.
+- Modern packaging: hatchling, uv, automatic versioning, OIDC-published releases, and 100% test coverage.
+
+## Installation
+
+**Project integration**:
+
+```shell
+# Add the package to your project
+pip install ptr727-aiopurpleair
+```
+
+```python
+# Import the library (the import name stays `aiopurpleair`)
+import aiopurpleair
+```
+
+**Dependencies**:
+
+Requires Python 3.13 or later (tested on 3.13 and 3.14), and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
 
 ## Usage
 
@@ -330,7 +331,7 @@ Regenerate it after an upstream API change:
 uv run --with pyyaml --with openapi-spec-validator python scripts/generate_openapi.py
 ```
 
-The generator takes the API version from the docs' changelog (the apiDoc build-metadata version lags behind), validates the result, and writes `docs/purpleair-openapi.yaml`. A non-empty diff means the upstream API changed. See [`AGENTS.md`](./AGENTS.md) for how the code is validated against the spec.
+The generator takes the API version from the docs' changelog (the apiDoc build-metadata version lags behind), validates the result, and writes `docs/purpleair-openapi.yaml`. A non-empty diff means the upstream API changed. See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for how the code is validated against the spec.
 
 **Coverage**: all 11 paths of the spec (currently API `1.2.0`) are implemented - keys, sensors (list, single, and history JSON/CSV), organization, and the full Groups API (group and member management, member data, and member history). The single-sensor `stats`/`stats_a`/`stats_b` blocks are returned as part of the sensor payload but are not requestable `fields` values, so they are parsed on the response but excluded from the requestable field catalog.
 
@@ -349,11 +350,42 @@ The generator takes the API version from the docs' changelog (the apiDoc build-m
   - Feature branch -> `develop` via **squash merge**; `develop` -> `main` via **merge commit**. Both methods are pinned in the branch rulesets.
   - CI runs on every branch push (there is no `pull_request` trigger); a fork PR's pushes don't run the base-repo check, so a maintainer lands the change on an in-repo branch before merge.
   - Dependabot targets `main` and `develop` in parallel and auto-merges once the required check passes.
-  - See [`WORKFLOW.md`](WORKFLOW.md) and [`AGENTS.md`](AGENTS.md) for the full release flow.
+  - See [`WORKFLOW.md`](WORKFLOW.md) for the CI/CD contract and [`OPERATIONS.md`](OPERATIONS.md) for the release runbooks.
 - **Code style**:
   - [ruff][ruff-link], `mypy`, and `pyright`; see [`CODESTYLE.md`](CODESTYLE.md) and [`.editorconfig`](.editorconfig). Everything runs through `uv run` (with `pytest` at 100% coverage and syrupy snapshots).
 - **Repository setup**:
   - See [`repo-config/README.md`](repo-config/README.md) for repository configuration details.
+
+## 3rd Party Tools
+
+The third-party tools, libraries, and actions this project depends on.
+
+| Tool | Role |
+| --- | --- |
+| [actionlint][actionlint-link] | Workflow YAML linter. |
+| [aiohttp][aiohttp-link] | Async HTTP client and server for Python. |
+| [apiDoc][apidoc-link] | API documentation generator. |
+| [aresponses][aresponses-link] | Async HTTP mocking library for pytest. |
+| [certifi][certifi-link] | CA certificate bundle. |
+| [Codecov][codecov-link] | Code coverage reporting service. |
+| [cspell][cspell-link] | Spell checker. |
+| [editorconfig-checker][editorconfig-checker-link] | Line-ending and whitespace linter. |
+| [GitHub Actions][github-actions-link] | CI and automation runner. |
+| [GitHub Dependabot][github-dependabot-link] | Dependency update bot. |
+| [hatchling][hatchling-link] | Python build backend. |
+| [markdownlint-cli2][markdownlint-link] | Markdown linter. |
+| [mypy][mypy-link] | Python static type checker. |
+| [Nerdbank.GitVersioning][nbgv-link] | Version computation from git height. |
+| [pre-commit][pre-commit-link] | Git hook manager. |
+| [pydantic][pydantic-link] | Data validation library using Python type hints. |
+| [pyright][pyright-link] | Python static type checker. |
+| [pytest][pytest-link] | Python test framework. |
+| [ruff][ruff-link] | Python linter and formatter. |
+| [ShellCheck][shellcheck-link] | Shell script linter. |
+| [syrupy][syrupy-link] | Snapshot testing plugin for pytest. |
+| [Trusted Publishing][trustedpublishing-link] | Keyless package publishing for PyPI. |
+| [uv][uv-link] | Python package and project manager. |
+| [yarl][yarl-link] | URL parsing and manipulation library. |
 
 ## Credits
 
@@ -364,39 +396,61 @@ The original MIT copyright is retained alongside that of the current maintainer 
 
 ## License
 
-Licensed under the [MIT License][license-link] and [NOTICE](./NOTICE)\
+Licensed under the [MIT License][license] and [NOTICE](./NOTICE)\
 ![GitHub License][license-shield]
 
-<!-- Shields links -->
+<!-- Shields -->
+
+[buildstatus-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/aiopurpleair/test-pull-request.yml?logo=github&label=Build%20Status
+[coverage-shield]: https://img.shields.io/codecov/c/github/ptr727/aiopurpleair?logo=codecov&label=Coverage
+[lastcommit-shield]: https://img.shields.io/github/last-commit/ptr727/aiopurpleair?logo=github&label=Last%20Commit
+[license-shield]: https://img.shields.io/github/license/ptr727/aiopurpleair?label=License
+[prereleaseversion-shield]: https://img.shields.io/github/v/release/ptr727/aiopurpleair?include_prereleases&filter=*-g*&label=GitHub%20Pre-Release&logo=github
+[pypireleaseversion-shield]: https://img.shields.io/pypi/v/ptr727-aiopurpleair?logo=pypi&label=PyPI%20Release
+[releaseversion-shield]: https://img.shields.io/github/v/release/ptr727/aiopurpleair?logo=github&label=GitHub%20Release
+
+<!-- Distribution -->
 
 [actions-link]: https://github.com/ptr727/aiopurpleair/actions
 [commits-link]: https://github.com/ptr727/aiopurpleair/commits/main
-[coverage-link]: https://app.codecov.io/gh/ptr727/aiopurpleair
-[coverage-shield]: https://img.shields.io/codecov/c/github/ptr727/aiopurpleair?logo=codecov&label=Coverage
 [discussions-link]: https://github.com/ptr727/aiopurpleair/discussions
 [github-link]: https://github.com/ptr727/aiopurpleair
 [issues-link]: https://github.com/ptr727/aiopurpleair/issues
-[lastcommit-shield]: https://img.shields.io/github/last-commit/ptr727/aiopurpleair?logo=github&label=Last%20Commit
-[license-link]: ./LICENSE
-[license-shield]: https://img.shields.io/github/license/ptr727/aiopurpleair?label=License
-[prereleaseversion-shield]: https://img.shields.io/github/v/release/ptr727/aiopurpleair?include_prereleases&filter=*-g*&label=GitHub%20Pre-Release&logo=github
 [pypi-link]: https://pypi.org/project/ptr727-aiopurpleair/
-[pypireleaseversion-shield]: https://img.shields.io/pypi/v/ptr727-aiopurpleair?logo=pypi&label=PyPI%20Release
-[buildstatus-shield]: https://img.shields.io/github/actions/workflow/status/ptr727/aiopurpleair/test-pull-request.yml?logo=github&label=Build%20Status
 [releases-link]: https://github.com/ptr727/aiopurpleair/releases
-[releaseversion-shield]: https://img.shields.io/github/v/release/ptr727/aiopurpleair?logo=github&label=GitHub%20Release
 
-<!-- Other links -->
+<!-- Repo -->
 
+[license]: ./LICENSE
+
+<!-- External -->
+
+[actionlint-link]: https://github.com/rhysd/actionlint
 [aiohttp-link]: https://github.com/aio-libs/aiohttp
 [apidoc-link]: https://apidocjs.com/
+[aresponses-link]: https://github.com/aresponses/aresponses
 [bachya-aiopurpleair-link]: https://github.com/bachya/aiopurpleair
 [bachya-link]: https://github.com/bachya
 [bachya-pr-link]: https://github.com/bachya/aiopurpleair/pull/719
+[certifi-link]: https://github.com/certifi/python-certifi
+[codecov-link]: https://about.codecov.io/
+[coverage-link]: https://app.codecov.io/gh/ptr727/aiopurpleair
+[cspell-link]: https://cspell.org
+[editorconfig-checker-link]: https://github.com/editorconfig-checker/editorconfig-checker
+[github-actions-link]: https://github.com/actions
+[github-dependabot-link]: https://github.com/dependabot
 [hatchling-link]: https://hatch.pypa.io/latest/
+[markdownlint-link]: https://github.com/DavidAnson/markdownlint-cli2
+[mypy-link]: https://www.mypy-lang.org/
 [nbgv-link]: https://github.com/dotnet/Nerdbank.GitVersioning
+[pre-commit-link]: https://pre-commit.com/
 [purpleair-api-link]: https://api.purpleair.com/#api-welcome
-[purpleair-link]: https://www.purpleair.com/
+[pydantic-link]: https://docs.pydantic.dev/latest/
+[pyright-link]: https://github.com/microsoft/pyright
+[pytest-link]: https://docs.pytest.org/
 [ruff-link]: https://docs.astral.sh/ruff/
+[shellcheck-link]: https://www.shellcheck.net/
+[syrupy-link]: https://github.com/syrupy-project/syrupy
 [trustedpublishing-link]: https://docs.pypi.org/trusted-publishers/
-[uv-link]: https://github.com/astral-sh/uv
+[uv-link]: https://docs.astral.sh/uv/
+[yarl-link]: https://github.com/aio-libs/yarl
