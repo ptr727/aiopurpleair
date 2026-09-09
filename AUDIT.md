@@ -22,7 +22,7 @@ Read the **`main` branch** as ground truth: `main` is the released, gated state.
 
 This repository's profile is fixed, so no classification step is needed:
 
-- **`python` + `pypi`**, `workflowModel: release`, `releaseTrigger: publish-on-merge`, `consumerModel: pull`.
+- **`python` + `pypi`**, `workflowModel: release`, `consumerModel: pull`. Publishing is **two-phase**: a human merge never auto-cuts a release, and a release is a merge to `main` by an allowlisted bot (`ptr727-codegen[bot]` or `dependabot[bot]`) or a deliberate `workflow_dispatch`. The fleet registry still records `releaseTrigger: publish-on-merge` and is owed an update to `two-phase`, so treat the pipeline rather than that field as the current truth until it is corrected.
 - Checks governing absent constructs (a .NET build, an image registry, a transfer artifact) are **N/A**. Record them as N/A and exclude them from the verdict. N/A is never a defect.
 
 ## 3. Dimensions
