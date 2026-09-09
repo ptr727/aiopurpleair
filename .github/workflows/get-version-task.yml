@@ -74,7 +74,7 @@ jobs:
         env:
           SEMVER2: ${{ steps.nbgv.outputs.SemVer2 }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           if [[ "$SEMVER2" == *-* ]]; then
             PRERELEASE=true
           else
