@@ -95,8 +95,10 @@ jobs:
   # shared config (.markdownlint-cli2.jsonc, cspell.json). README.md and HISTORY.md must be markdown- and
   # spelling-clean; all workflows must lint clean. There is no standalone shellcheck step because the tree
   # carries no shell script: the repository-configuration script is hub-hosted and reached rather than
-  # carried. actionlint still shells out to shellcheck for embedded workflow `run:` blocks, so those stay
-  # covered. Adding a shell script to this repository means adding the shellcheck step back with it.
+  # carried. Embedded workflow `run:` blocks still get shellcheck, but only because actionlint runs that
+  # integration when shellcheck is on PATH and ubuntu-latest preinstalls it, so a runner image that drops
+  # it would silently skip shell linting here rather than fail. Adding a shell script to this repository
+  # means adding the shellcheck step back with it.
   docs:
     name: Docs lint job
     runs-on: ubuntu-latest
