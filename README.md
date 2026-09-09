@@ -354,7 +354,7 @@ The generator takes the API version from the docs' changelog (the apiDoc build-m
 - **Code style**:
   - [ruff][ruff-link], `mypy`, and `pyright`; see [`CODESTYLE.md`](CODESTYLE.md) and [`.editorconfig`](.editorconfig). Everything runs through `uv run` (with `pytest` at 100% coverage and syrupy snapshots).
 - **Repository setup**:
-  - See [`repo-config/README.md`](repo-config/README.md) for repository configuration details.
+  - Settings, labels, and branch rulesets are applied and audited by a hub-hosted script rather than one carried here; see [`OPERATIONS.md`](OPERATIONS.md) "Configuration Layout" for what this repository keeps and [`AUDIT.md`](AUDIT.md) section 4 for how to run the check.
 
 ## 3rd Party Tools
 
@@ -381,7 +381,7 @@ The third-party tools, libraries, and actions this project depends on.
 | [pyright][pyright-link] | Python static type checker. |
 | [pytest][pytest-link] | Python test framework. |
 | [ruff][ruff-link] | Python linter and formatter. |
-| [ShellCheck][shellcheck-link] | Shell script linter. |
+| [ShellCheck][shellcheck-link] | Shell linter, reached through actionlint for workflow `run:` blocks. |
 | [syrupy][syrupy-link] | Snapshot testing plugin for pytest. |
 | [Trusted Publishing][trustedpublishing-link] | Keyless package publishing for PyPI. |
 | [uv][uv-link] | Python package and project manager. |
