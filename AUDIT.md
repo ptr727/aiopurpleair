@@ -43,8 +43,9 @@ Settings, labels, and the ruleset payloads are applied by the hub-hosted `repo-c
 ```shell
 # cwd is a hub checkout of github.com/ptr727/ProjectTemplate, at main
 repo-config/configure.sh check ptr727/aiopurpleair release
-repo-config/configure.sh apply ptr727/aiopurpleair release
 ```
+
+`check` reads and never writes, which is what makes it usable here. Its `apply` counterpart writes to the live repository, so it is a converge action rather than a measurement and belongs to section 6.
 
 That command checks the rulesets, the general settings, the security features, and the labels. **It does not check secrets, and it does not check the `pypi` deployment environment.** Both of the checks below are therefore part of this section rather than optional extras, because the command above reports a match whether or not either one holds.
 
@@ -85,6 +86,7 @@ The audit is read-only. Converging is the follow-on phase, and the hub's `RESYNC
 - Drive the review loop to green, addressing and resolving every thread, per [`GOVERNANCE.md`][governance-pr-review] "PR Review Etiquette".
 - **Merge only with explicit maintainer permission.** The agent drives to green and stops.
 - One focused pull request per drift class, cross-referencing the finding it closes.
+- Settings, labels, and rulesets are the exception to the pull-request rule, since they are live configuration rather than tracked files. Converge them by running `repo-config/configure.sh apply ptr727/aiopurpleair release` from a hub checkout at `main`, then re-run the `check` in section 4 to confirm the drift is gone. This writes to the live repository, which is why it appears here and not in the measurement section.
 
 <!-- Repo -->
 
