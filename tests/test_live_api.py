@@ -4,7 +4,7 @@ These tests hit the live API with real credentials, so they are excluded from
 the default suite: they run only when ``AIOPURPLEAIR_LIVE_TESTS=1`` is set and
 credentials are available (from ``.env.test`` in the repo root, the path in
 ``AIOPURPLEAIR_TEST_ENV``, or the environment). See OPERATIONS.md
-"Live API validation".
+"Live API Validation".
 
 Run::
 

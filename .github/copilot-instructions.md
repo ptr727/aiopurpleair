@@ -6,7 +6,7 @@ The **canonical guide is [AGENTS.md](../AGENTS.md)** at the repo root. Read it f
 
 For code-style rules, see [`CODESTYLE.md`](../CODESTYLE.md) at the repo root - one guide with a General section plus the Python section.
 
-Do not duplicate language-specific rules here. **Project-specific conventions and API/behavioral contracts also belong in [OPERATIONS.md](../OPERATIONS.md) and [ARCHITECTURE.md](../ARCHITECTURE.md), not here**, since this file is intentionally limited to the inline commit/PR-title summary and the GitHub Copilot Review Runbook. Non-Copilot agents (Claude Code, Codex, Cursor, ...) are not directed to this file and don't read it by default, so any rule a reviewer must honor has to live in `AGENTS.md` to be provider-independent.
+Do not duplicate language-specific rules here. **Project-specific conventions and API/behavioral contracts also belong in [OPERATIONS.md](../OPERATIONS.md) and [ARCHITECTURE.md](../ARCHITECTURE.md), not here**, since this file is intentionally limited to the inline commit/PR-title summary and the GitHub Copilot Review Runbook. Non-Copilot agents (Claude Code, Codex, Cursor, ...) are not directed to this file and don't read it by default, so any rule a reviewer must honor has to live in `GOVERNANCE.md`, or in this repo's own `OPERATIONS.md`, to be provider-independent.
 
 ## Commit Messages and Pull Request Titles
 
@@ -20,7 +20,7 @@ Summarized for VS Code's generators, with the full rules, rationale, and example
 
 > This runbook implements the [GOVERNANCE.md "PR Review Etiquette"](../GOVERNANCE.md#pr-review-etiquette) review-loop contract for GitHub Copilot. Without it in-repo, an agent has no pointer to the reliable Copilot mechanics and falls back to known-broken paths (the no-op `POST /requested_reviewers`, the wrong bot-login filter). In the API snippets below, fill the `ptr727` / `aiopurpleair` / `<N>` placeholders.
 
-Use this section for provider-specific mechanics. The expected review loop *contract* (request review on every push, verify head-SHA coverage, triage findings, reply + resolve, escalate when stuck) is defined in [AGENTS.md -> PR Review Etiquette](../AGENTS.md#pr-review-etiquette). This section only describes how to make GitHub Copilot reliably execute it.
+Use this section for provider-specific mechanics. The expected review loop *contract* (request review on every push, verify head-SHA coverage, triage findings, reply + resolve, escalate when stuck) is defined in [GOVERNANCE.md -> PR Review Etiquette](../GOVERNANCE.md#pr-review-etiquette). This section only describes how to make GitHub Copilot reliably execute it.
 
 ### Triggering and Polling
 
