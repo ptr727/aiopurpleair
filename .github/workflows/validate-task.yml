@@ -96,9 +96,9 @@ jobs:
   # spelling-clean; all workflows must lint clean. There is no standalone shellcheck step because the tree
   # carries no shell script: the repository-configuration script is hub-hosted and reached rather than
   # carried. Embedded workflow `run:` blocks still get shellcheck, but only because actionlint runs that
-  # integration when shellcheck is on PATH and ubuntu-latest preinstalls it, so a runner image that drops
-  # it would silently skip shell linting here rather than fail. Adding a shell script to this repository
-  # means adding the shellcheck step back with it.
+  # integration when shellcheck is on PATH and ubuntu-latest preinstalls it. A runner image that dropped it
+  # would leave actionlint warning that the checks were skipped and still passing the job, so the loss shows
+  # in the log rather than in the result. Adding a shell script here means adding the shellcheck step back.
   docs:
     name: Docs lint job
     runs-on: ubuntu-latest
