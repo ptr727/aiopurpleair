@@ -52,11 +52,11 @@ Feature branch from `develop`, then code plus tests, then `uv run ruff format` a
 
 ### Cut a Stable Release
 
-Merge `develop -> main` with a merge commit. If the promotion touches a shipped path (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`, which a real code or dependency change does touch), the paths-filtered push auto-publishes the stable PyPI release. A `workflow_dispatch` on `main` force-publishes the current tip when needed.
+Merge `develop -> main` with a merge commit, then **dispatch the publisher on `main`**. The promotion merge itself publishes nothing, because a human merge never auto-cuts a release, so the release is a separate and deliberate step. A bot merge to `main` touching a shipped path is the one path that publishes without a dispatch.
 
 ### Cut a Prerelease
 
-A shipped-path push to `develop` publishes a `.dev0` prerelease automatically, and a `workflow_dispatch` on `develop` does it on demand.
+Dispatch the publisher on `develop`, which builds a `.dev0` prerelease. Pushes to `develop` reach no publish trigger at all, so a prerelease is always deliberate.
 
 **Never manually create a GitHub release or a tag.** The pipeline owns this end to end.
 
@@ -124,9 +124,9 @@ The version is derived by [Nerdbank.GitVersioning](https://github.com/dotnet/Ner
 
 ### Review and Merge Preconditions
 
-[`GOVERNANCE.md`](./GOVERNANCE.md) "PR Review Etiquette" carries the fleet's review loop and merge gate whole. One fact about this repository changes what a merge means here today, and it is **unfinished migration rather than a local rule**. The carried "Release Model" section states the fleet's position, that a human merge never auto-publishes, and this repository has not yet adopted it: it is still registered `releaseTrigger: publish-on-merge`, and the change that gates publishing to bot merges of `main` has been written but not landed. Until it lands, what follows is what actually happens.
+[`GOVERNANCE.md`](./GOVERNANCE.md) "PR Review Etiquette" carries the fleet's review loop and merge gate whole, and this repository now follows it without exception. **A human merge never auto-cuts a release here.** Publishing happens on a bot code-merge to `main`, or on a deliberate dispatch, and the decision has one definition in the hub's `publish-plan-task.yml` that every publisher job gates on.
 
-**Merging can release, so know which merges publish.** Unlike a pull-distributed target, this repository publishes on a paths-filtered push: a merge to `main` or `develop` that touches a shipped path (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`) triggers [`publish-release.yml`](./.github/workflows/publish-release.yml), with `main` producing a stable PyPI release and `develop` a `.dev0` prerelease. A merge touching only docs, tests, or workflow YAML does not publish. So before authorizing a merge to a release branch, know whether it hits a shipped path, because if it does, the merge *is* a release. Never trigger a `workflow_dispatch` publish without explicit maintainer instruction.
+**Your own merge does not release, and a bot's can.** A merge you make to `main` reaches [`publish-release.yml`](./.github/workflows/publish-release.yml)'s push trigger, and the `plan` job then returns `publish=false` and emits a `::warning::` naming the actor, so nothing is built or uploaded. A bot merge to `main` that touches a shipped path (`src/aiopurpleair/**`, `pyproject.toml`, `version.json`, `uv.lock`) does publish a stable release, which is how a Dependabot bump reaches PyPI without a human step. Everything else is a deliberate dispatch. Never trigger a `workflow_dispatch` publish without explicit maintainer instruction.
 
 ### Release-Train Invariants
 
