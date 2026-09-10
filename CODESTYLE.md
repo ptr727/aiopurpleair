@@ -157,7 +157,7 @@ The package version lives nowhere in the committed tree as a real number: `src/a
 Before pushing or opening a PR:
 
 - VS Code's **Problems** pane should be quiet for the files you touched. The relevant linters are ruff (via the `charliermarsh.ruff` extension) and pyright (via the `ms-python.python` extension's bundled Pylance).
-- CI runs the same verify set (`uv run ruff check` + `uv run ruff format --check` + `uv run mypy src` + `uv run pyright`) plus `uv run pytest` as separate workflow steps - the authoritative gate.
+- CI runs the same verify set through the hub's validate task rather than as local steps, and the invocations differ from the local ones while the coverage matches. `ruff check` and `ruff format --check` run in its `lint` job, `mypy` runs there bare, targeted by `files = ["src"]` in `pyproject.toml` rather than by a path argument, `pytest` runs in its `unit-test` job, and `pyright` runs in this repository's own `.github/actions/validate` hook, because that job takes `mypy` or `pyright` and never both. It remains the authoritative gate.
 - Markdown in this directory follows the repo-wide [Markdown and Spelling](#markdown-and-spelling) rules.
 
 [mypy]: https://mypy-lang.org/

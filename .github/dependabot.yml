@@ -38,7 +38,11 @@ updates:
 
   - package-ecosystem: "github-actions"
     target-branch: "main"
-    directory: "/"
+    # `/` reaches .github/workflows and a root action.yml only, so the composite action under
+    # .github/actions needs naming or its pins are tracked by nothing and rot silently.
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "daily"
     groups:
@@ -48,7 +52,9 @@ updates:
 
   - package-ecosystem: "github-actions"
     target-branch: "develop"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "daily"
     groups:
