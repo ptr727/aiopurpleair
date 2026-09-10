@@ -47,8 +47,14 @@ jobs:
     name: Validate job
     needs: [plan]
     if: ${{ needs.plan.outputs.publish == 'true' }}
-    uses: ./.github/workflows/validate-task.yml
-    secrets: inherit
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@9d5a0c028997754a5156164ceff950f01b5e668f # 2.0.606
+    permissions:
+      contents: read
+    with:
+      python-versions: '["3.13", "3.14"]'
+    # Named rather than inherited: the fleet forbids secrets: inherit on a cross-repository call.
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # Build, version, validate, and cut the GitHub release for the triggering branch, and upload the wheel +
   # sdist for publish-pypi. Grants the write scope the github-release job needs (the task declares none, so

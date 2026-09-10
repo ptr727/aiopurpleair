@@ -318,7 +318,7 @@ asyncio.run(main())
 
 - **Package**: a Python wheel + sdist (`ptr727-aiopurpleair`), built with the [hatchling][hatchling-link] backend on a src-layout ([`src/aiopurpleair/`](./src/aiopurpleair/)) and managed with [uv][uv-link].
 - **Versioning**: automatic via [Nerdbank.GitVersioning][nbgv-link] from [`version.json`](./version.json) (`1.0` base) plus git height; `main` builds a clean stable `X.Y.Z`, `develop` a `X.Y.Z.dev0` prerelease. There is no manual tagging.
-- **Publishing**: releases publish to PyPI over OIDC [Trusted Publishing][trustedpublishing-link] (no stored API token). A shipped-path push to `main` (stable) or `develop` (prerelease), or a manual dispatch, cuts a [GitHub Release][releases-link] and uploads the wheel + sdist to PyPI. See [`WORKFLOW.md`](./WORKFLOW.md) for the complete CI/CD contract.
+- **Publishing**: releases publish to PyPI over OIDC [Trusted Publishing][trustedpublishing-link] (no stored API token). A shipped-path merge to `main` by an allowlisted bot (stable), or a manual dispatch of `main` (stable) or `develop` (prerelease), cuts a [GitHub Release][releases-link] and uploads the wheel + sdist to PyPI. A human merge never auto-cuts a release. See [`WORKFLOW.md`](./WORKFLOW.md) for the complete CI/CD contract.
 
 ## API Reference
 
@@ -348,7 +348,7 @@ The generator takes the API version from the docs' changelog (the apiDoc build-m
 
 - **Branching workflow**:
   - Feature branch -> `develop` via **squash merge**; `develop` -> `main` via **merge commit**. Both methods are pinned in the branch rulesets.
-  - CI runs on every branch push (there is no `pull_request` trigger); a fork PR's pushes don't run the base-repo check, so a maintainer lands the change on an in-repo branch before merge.
+  - CI runs on every pull request. A fork pull request runs the base-repo check and can satisfy it, though a first-time contributor's run waits on a maintainer's approval, per the repository's `first_time_contributors` policy.
   - Dependabot targets `main` and `develop` in parallel and auto-merges once the required check passes.
   - See [`WORKFLOW.md`](WORKFLOW.md) for the CI/CD contract and [`OPERATIONS.md`](OPERATIONS.md) for the release runbooks.
 - **Code style**:

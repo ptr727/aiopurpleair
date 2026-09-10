@@ -1,0 +1,27 @@
+# This repository's validate hook, run by the hub's validate-task.yml validate job.
+# It exists for one check.
+# The hub's lint job runs mypy or pyright and never both, taking mypy wherever a pyproject declares [tool.mypy], which this one does.
+# Adopting that task alone would therefore drop pyright silently, and the hub's own comment names this hook as where a repository wanting both enforced puts the second.
+# The two are not redundant here, mypy being strict over the shipped surface (src) while pyright covers src and tests through its pyproject include.
+# Dropping pyright would stop type-checking the test suite entirely.
+name: Validate repository (aiopurpleair)
+description: Pyright, which the hub lint job skips because mypy takes precedence.
+
+runs:
+  using: composite
+  steps:
+
+    - name: Setup uv step
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      with:
+        python-version: "3.13"
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Sync dependencies step
+      shell: bash
+      run: uv sync --all-groups --frozen
+
+    - name: Type check with pyright step
+      shell: bash
+      run: uv run pyright
