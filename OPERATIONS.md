@@ -39,7 +39,7 @@ rc=1
 if [ -z "$HUB" ]; then
   echo "set HUB to your hub checkout's path" >&2
 elif [ -z "$base" ]; then
-  echo "no merge-base with $target: check the target line, then run git fetch origin ${target#origin/}:refs/remotes/$target, adding --unshallow in a shallow clone" >&2
+  echo "no merge-base with $target: check the target line, and that this clone has that branch and its history" >&2
 else
   prose=0
   python3 "$HUB/.github/actions/prose-gate/prose_lint.py" --diff "$base" -- . || prose=$?
