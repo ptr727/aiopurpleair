@@ -70,7 +70,7 @@ jobs:
     permissions:
       contents: write
       actions: write
-    # expect_release_assets keeps its default, since the build-pypi hook uploads the wheel + sdist as release-asset-<branch>-pypi.
+    # The expect_release_assets input keeps its default, since the build-pypi hook uploads the wheel + sdist as release-asset-<branch>-pypi.
     with:
       ref: ${{ github.sha }}
       branch: ${{ github.ref_name }}
@@ -92,7 +92,7 @@ jobs:
     environment:
       name: pypi
       url: https://pypi.org/project/ptr727-aiopurpleair/
-    # id-token: write for the OIDC exchange, contents: read for repo metadata, actions: write to delete the consumed artifact.
+    # The grants are id-token: write for the OIDC exchange, contents: read for repo metadata, and actions: write to delete the consumed artifact.
     permissions:
       id-token: write
       contents: read

@@ -2,7 +2,7 @@
 # It exists to keep two things the hub default would change.
 # The default stamps NBGV's four-part AssemblyFileVersion, whose fourth segment comes from the commit id, so the package would never match its SemVer2 release tag (ptr727/ProjectTemplate#1521).
 # The default also uploads no release asset, so the GitHub release would stop carrying the wheel and sdist.
-# Validation is not repeated here, since the publisher's validate job runs the hub validate-task before this task starts.
+# Validation is not repeated here, since both callers run the hub validate-task in the same workflow and gate their outcome on it, CI through its aggregator and the publisher through the publish job's needs.
 name: Build PyPI package (aiopurpleair)
 description: Build the wheel and sdist at the release tag's X.Y.Z, for the publish-pypi job and the GitHub release.
 
