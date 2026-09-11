@@ -1,0 +1,97 @@
+# This repository's build-pypi hook, run by the hub's build-release-task.yml in place of its pypi-build-default.
+# It exists to keep two things the hub default would change.
+# The default stamps NBGV's four-part AssemblyFileVersion, whose fourth segment comes from the commit id, so the package would never match its SemVer2 release tag (ptr727/ProjectTemplate#1521).
+# The default also uploads no release asset, so the GitHub release would stop carrying the wheel and sdist.
+# Validation is not repeated here, since both callers run the hub validate-task in the same workflow and gate their outcome on it, CI through its aggregator and the publisher through the publish job's needs.
+name: Build PyPI package (aiopurpleair)
+description: Build the wheel and sdist at the release tag's X.Y.Z, for the publish-pypi job and the GitHub release.
+
+inputs:
+  branch:
+    description: Logical branch driving the PEP 440 version. develop gives a .dev0 prerelease, else a plain release.
+    required: true
+  smoke:
+    description: Smoke mode skips both artifact uploads, since nothing would consume them.
+    required: false
+    default: 'false'
+  assembly-file-version:
+    description: NBGV AssemblyFileVersion (M.N.P.B), the PEP 440 version source.
+    required: true
+  project-dir:
+    description: Working directory of the PyPI project.
+    required: true
+
+runs:
+  using: composite
+  steps:
+
+    - name: Setup uv step
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Sync dependencies step
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      run: uv sync --all-groups --frozen
+
+    # The hook receives AssemblyFileVersion and not SemVer2, so the release tag's X.Y.Z is its first three segments.
+    # For version.json's two-part base those equal SemVer2's core, the height already carrying versionHeightOffset.
+    # The fourth segment is dropped rather than published, and develop appends .dev0.
+    - name: Compute PyPI version step
+      id: pypiver
+      shell: bash
+      env:
+        AFV: ${{ inputs.assembly-file-version }}
+        BRANCH: ${{ inputs.branch }}
+      run: |
+        set -Eeuo pipefail
+        if [[ ! "$AFV" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::AssemblyFileVersion '$AFV' is not M.N.P.B; refusing to derive a package version from it."
+          exit 1
+        fi
+        base="${AFV%.*}"
+        if [[ "$BRANCH" == "develop" ]]; then
+          version="${base}.dev0"
+        else
+          version="$base"
+        fi
+        echo "PyPI version for branch $BRANCH: $version"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    # Rewrites the placeholder hatchling reads, on the runner only, after the frozen sync so the resolve is unaffected.
+    - name: Write version into _version.py step
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      env:
+        VERSION: ${{ steps.pypiver.outputs.version }}
+      run: |
+        set -Eeuo pipefail
+        sed -i 's/^__version__ = .*/__version__ = "'"$VERSION"'"/' src/aiopurpleair/_version.py
+        grep -qxF "__version__ = \"$VERSION\"" src/aiopurpleair/_version.py
+
+    - name: Build sdist and wheel step
+      shell: bash
+      working-directory: ${{ inputs.project-dir }}
+      run: uv build
+
+    # The name publish-release's publish-pypi job downloads, and deletes once it has pushed.
+    - name: Upload PyPI build artifact step
+      if: ${{ inputs.smoke != 'true' }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: pypi-build-${{ inputs.branch }}
+        path: ${{ inputs.project-dir }}/dist/*
+        if-no-files-found: error
+        retention-days: 1
+
+    # The pattern the hub github-release job collects and attaches, and deletes once the release is cut.
+    - name: Upload release asset artifact step
+      if: ${{ inputs.smoke != 'true' }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: release-asset-${{ inputs.branch }}-pypi
+        path: ${{ inputs.project-dir }}/dist/*
+        if-no-files-found: error
+        retention-days: 1
