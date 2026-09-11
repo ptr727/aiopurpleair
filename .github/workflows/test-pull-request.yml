@@ -45,7 +45,7 @@ jobs:
   # The pin matches publish-release.yml's publish job, which is what keeps the smoke build and the publish build one definition.
   smoke-build:
     name: Smoke build job
-    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@f4e3f313ba59fa1b87595579c9a12ea9ae62450b # 2.0.610
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@6be39c68376c3b012328ec5e351a7450ee6fd937 # 2.0.616
     permissions:
       contents: read
     with:
@@ -57,7 +57,7 @@ jobs:
       enable_docker: false
       enable_nuget: false
       enable_dotnet_publish: false
-      # No pypi_version_file, which only the hub default reads, so a lost hook fails the build rather than falling back to that default's version.
+      # No pypi_version_file, which only the hub default reads, so a lost hook fails the build here rather than passing while CI stops exercising the hook.
       pypi_project_dir: .
 
   # Single required status check, its name being the context the live branch rulesets require.
