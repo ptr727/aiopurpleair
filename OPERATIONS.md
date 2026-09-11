@@ -39,7 +39,7 @@ rc=1
 if [ -z "$HUB" ]; then
   echo "set HUB to your hub checkout's path" >&2
 elif [ -z "$base" ]; then
-  echo "no merge-base with $target, so fetch it" >&2
+  echo "no merge-base with $target: check the target line, or in a single-branch clone run git remote set-branches --add origin ${target#origin/} and fetch again" >&2
 else
   prose=0
   python3 "$HUB/.github/actions/prose-gate/prose_lint.py" --diff "$base" -- . || prose=$?
