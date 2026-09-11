@@ -76,6 +76,10 @@ select = ["E", "W", "F", "I", "B", "UP", "N", "SIM", "RUF"]
 docstring-code-format = true
 
 [tool.mypy]
+# Declared here rather than passed on the command line, because the hub's validate-task runs a bare
+# `uv run mypy`, which exits 2 with "Missing target module, package, files, or command" without it.
+# The shipped surface only: pyright covers src and tests through its own include below.
+files = ["src"]
 python_version = "3.13"
 plugins = ["pydantic.mypy"]
 strict = true

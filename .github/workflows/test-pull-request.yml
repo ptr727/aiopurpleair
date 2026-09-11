@@ -1,18 +1,24 @@
 name: Test pull request action
 
-# CI for every branch. Runs on push so the reusable tasks resolve from the pushed head: a PR that edits a
-# workflow or the build task tests its own copy. validate-task (lint + test matrix) and smoke-build run on
-# every push with no paths filter, so a reusable-workflow change is always exercised. The aggregator below is
-# the ruleset required-status-check, produced here on the head SHA. validate-task is the same gate the
-# publisher runs, so nothing merges or publishes that would fail it.
+# CI for every pull request, whatever its base branch.
+# The validate job reaches the hub's validate-task by pin, and smoke-build proves the library still packs while publishing nothing.
+# The aggregator below is the ruleset required-status-check.
+# The validate job is the same gate the publisher runs, so nothing merges or publishes that would fail it.
 #
-# There is deliberately no pull_request trigger: a fork PR cannot push to this repo, so it produces no run
-# and cannot satisfy the required check. A maintainer lands such a contribution on an in-repo branch (which
-# does push, and so validates) before merging.
+# The trigger is pull_request, matching the fleet's release-with-smoke stub.
+# It was push until the gates moved to the hub, and both reasons for that are spent.
+# The tasks a push run resolved from the pushed head are hub-hosted and pinned now, so no local copy remains to test against itself.
+# The hub's prose gate carries an `if: github.event.pull_request != null` guard, so a push-triggered run skipped it silently.
+# Adopting on push would therefore have taken the fleet lint job minus one of its gates (ptr727/ProjectTemplate#1516).
+#
+# A fork pull request now produces a run and can satisfy the required check, where under push it produced none and had to be landed on an in-repo branch first.
+# The repository's fork-PR approval policy is first_time_contributors, so a new contributor's first run still waits on a maintainer's Approve and run.
 on:
-  # All branches, but not tags: release tags must not re-run CI.
-  push:
-    branches: ['**']
+  # Deliberately unfiltered by base branch, where the fleet stub names [main, develop].
+  # Retargeting a pull request fires activity type `edited`, which is not in the default set, so a run does not follow a retarget.
+  # A stack retargeted from a feature branch onto develop would then wait forever for a context no run will post.
+  # Running on every pull request puts that context on the head SHA at `opened`, and a retarget carries it along because the head SHA does not change.
+  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -21,33 +27,49 @@ concurrency:
 
 jobs:
 
-  # `!github.event.deleted` skips a branch-deletion push (github.sha is all-zeros, so checkout/build fails).
   validate:
     name: Validate job
-    if: ${{ !github.event.deleted }}
-    uses: ./.github/workflows/validate-task.yml
-    secrets: inherit
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@9d5a0c028997754a5156164ceff950f01b5e668f # 2.0.606
+    permissions:
+      contents: read
+    # The interpreter matrix is this repository's rather than the task's, the hub task defaulting to ["3.13"] alone.
+    # Omitting this would drop the 3.14 leg while requires-python still claims to support it.
+    with:
+      python-versions: '["3.13", "3.14"]'
+    # Named rather than inherited: the fleet forbids secrets: inherit on a cross-repository call.
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # Build and pack the library in its branch configuration to prove it ships, publishing nothing. Runs on
-  # every push, so a change to build-release-task is exercised head-resolved in the PR that makes it.
+  # Build and pack the library in its branch configuration to prove it ships, publishing nothing.
+  # The hub's build-release-task runs this repository's build-pypi hook, and smoke: true hard-disables every upload and push in it.
+  # The pin matches publish-release.yml's publish job, which is what keeps the smoke build and the publish build one definition.
   smoke-build:
     name: Smoke build job
-    if: ${{ !github.event.deleted }}
-    uses: ./.github/workflows/build-release-task.yml
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@f4e3f313ba59fa1b87595579c9a12ea9ae62450b # 2.0.610
     permissions:
       contents: read
     with:
       smoke: true
-      publish: false
-      branch: ${{ github.ref_name }}
+      # On a pull_request event github.ref_name is the PR ref such as 123/merge, never a branch.
+      # The logical branch reads base_ref first and falls back to ref_name on a non-PR trigger.
+      branch: ${{ github.base_ref || github.ref_name }}
+      # One target, so every other target is off rather than paths-filtered.
+      enable_docker: false
+      enable_nuget: false
+      enable_dotnet_publish: false
+      # No pypi_version_file, which only the hub default reads, so a lost hook fails the build rather than falling back to that default's version.
+      pypi_project_dir: .
 
-  # Single required status check. Its name is the ruleset-bound context in repo-config/ruleset-*.json. Do not
-  # rename it without updating those in lockstep. Must succeed, not merely not-fail.
+  # Single required status check, its name being the context the live branch rulesets require.
+  # That context is applied from the hub's payloads, of which this repository carries no copy.
+  # Renaming it starts at the hub rather than here, so a local rename alone leaves every pull request unmergeable.
+  # See OPERATIONS.md "Release-Train Invariants".
+  # It must succeed, not merely not-fail.
   check-workflow-status:
     name: Check pull request workflow status job
     runs-on: ubuntu-latest
     needs: [validate, smoke-build]
-    if: ${{ always() && !github.event.deleted }}
+    if: ${{ always() }}
     steps:
       - name: Check workflow results step
         run: |
