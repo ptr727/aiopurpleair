@@ -36,10 +36,10 @@ git fetch origin
 base="$(git merge-base origin/develop HEAD)"
 rc=1
 if [ -n "$HUB" ] && [ -n "$base" ]; then
-  python3 "$HUB/.github/actions/prose-gate/prose_lint.py" --diff "$base" -- .
-  prose=$?
-  python3 "$HUB/.github/actions/repo-gate/repo_gate.py"
-  repo=$?
+  prose=0
+  python3 "$HUB/.github/actions/prose-gate/prose_lint.py" --diff "$base" -- . || prose=$?
+  repo=0
+  python3 "$HUB/.github/actions/repo-gate/repo_gate.py" || repo=$?
   [ "$prose" -eq 0 ] && [ "$repo" -eq 0 ] && rc=0
 else
   echo "set HUB to your hub checkout's path, and fetch the target branch" >&2
