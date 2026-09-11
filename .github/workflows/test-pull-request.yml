@@ -41,18 +41,24 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # Build and pack the library in its branch configuration to prove it ships, publishing nothing.
-  # This still calls the local build-release-task, which the release-chain adoption replaces with the hub's.
+  # The hub's build-release-task runs this repository's build-pypi hook, and smoke: true hard-disables every upload and push in it.
+  # The pin matches publish-release.yml's publish job, which is what keeps the smoke build and the publish build one definition.
   smoke-build:
     name: Smoke build job
-    uses: ./.github/workflows/build-release-task.yml
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@f4e3f313ba59fa1b87595579c9a12ea9ae62450b # 2.0.610
     permissions:
       contents: read
     with:
       smoke: true
-      publish: false
       # On a pull_request event github.ref_name is the PR ref such as 123/merge, never a branch.
       # The logical branch reads base_ref first and falls back to ref_name on a non-PR trigger.
       branch: ${{ github.base_ref || github.ref_name }}
+      # One target, so every other target is off rather than paths-filtered.
+      enable_docker: false
+      enable_nuget: false
+      enable_dotnet_publish: false
+      # No pypi_version_file, which only the hub default reads, so a lost hook fails the build rather than falling back to that default's version.
+      pypi_project_dir: .
 
   # Single required status check, its name being the context the live branch rulesets require.
   # That context is applied from the hub's payloads, of which this repository carries no copy.
