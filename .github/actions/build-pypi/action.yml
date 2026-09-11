@@ -15,7 +15,7 @@ inputs:
     default: 'false'
   # The hub task passes this from build-release-task.yml 2.0.613 on, so a pin below that leaves it empty and every build fails here.
   semver2:
-    description: NBGV SemVer2, whose M.N.P core is the PEP 440 version source.
+    description: NBGV SemVer2, whose X.Y.Z core is the PEP 440 version source.
     required: true
   # The hub task still passes this, so it stays declared to spare every run the runner's unexpected-input warning.
   assembly-file-version:
