@@ -1,7 +1,6 @@
 # This repository's build-pypi hook, run by the hub's build-release-task.yml in place of its pypi-build-default.
-# It exists to keep two things the hub default would change.
-# The default stamps NBGV's four-part AssemblyFileVersion, whose fourth segment comes from the commit id, so the package would never match its SemVer2 release tag (ptr727/ProjectTemplate#1521).
-# The default also uploads no release asset, so the GitHub release would stop carrying the wheel and sdist.
+# It exists because the default uploads no release asset, so the wheel and sdist reach the GitHub release only through this hook.
+# Its version is the default's, the release tag's X.Y.Z taken from SemVer2's core.
 # Validation is not repeated here, since both callers run the hub validate-task in the same workflow and gate their outcome on it, CI through its aggregator and the publisher through the publish job's needs.
 name: Build PyPI package (aiopurpleair)
 description: Build the wheel and sdist at the release tag's X.Y.Z, for the publish-pypi job and the GitHub release.
@@ -14,9 +13,14 @@ inputs:
     description: Smoke mode skips both artifact uploads, since nothing would consume them.
     required: false
     default: 'false'
-  assembly-file-version:
-    description: NBGV AssemblyFileVersion (M.N.P.B), the PEP 440 version source.
+  # The hub task passes this from build-release-task.yml 2.0.613 on, so a pin below that leaves it empty and every build fails here.
+  semver2:
+    description: NBGV SemVer2, whose X.Y.Z core is the PEP 440 version source.
     required: true
+  # The hub task still passes this, so it stays declared to spare every run the runner's unexpected-input warning.
+  assembly-file-version:
+    description: NBGV AssemblyFileVersion, unused since semver2 is the version source.
+    required: false
   project-dir:
     description: Working directory of the PyPI project.
     required: true
@@ -36,28 +40,28 @@ runs:
       working-directory: ${{ inputs.project-dir }}
       run: uv sync --all-groups --frozen
 
-    # The hook receives AssemblyFileVersion and not SemVer2, so the release tag's X.Y.Z is its first three segments.
-    # For version.json's two-part base those equal SemVer2's core, the height already carrying versionHeightOffset.
-    # The fourth segment is dropped rather than published, and develop appends .dev0.
+    # The release tag's X.Y.Z is SemVer2 with its prerelease and build segments stripped, and develop appends .dev0.
     - name: Compute PyPI version step
       id: pypiver
       shell: bash
       env:
-        AFV: ${{ inputs.assembly-file-version }}
+        SEMVER2: ${{ inputs.semver2 }}
         BRANCH: ${{ inputs.branch }}
       run: |
         set -Eeuo pipefail
-        if [[ ! "$AFV" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo "::error::AssemblyFileVersion '$AFV' is not M.N.P.B; refusing to derive a package version from it."
+        core="${SEMVER2%%[-+]*}"
+        if [[ ! "$core" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          # Characters outside SemVer's own set print as ?, so the value can form no workflow command.
+          printf 'Received semver2: %s\n' "${SEMVER2//[^0-9A-Za-z.+-]/?}"
+          echo "::error::semver2 carries no X.Y.Z core to build a PEP 440 version from."
           exit 1
         fi
-        base="${AFV%.*}"
         if [[ "$BRANCH" == "develop" ]]; then
-          version="${base}.dev0"
+          version="${core}.dev0"
         else
-          version="$base"
+          version="$core"
         fi
-        echo "PyPI version for branch $BRANCH: $version"
+        echo "PyPI version: $version"
         echo "version=$version" >> "$GITHUB_OUTPUT"
 
     # Rewrites the placeholder hatchling reads, on the runner only, after the frozen sync so the resolve is unaffected.
