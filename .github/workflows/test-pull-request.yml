@@ -9,7 +9,7 @@ name: Test pull request action
 # It was push until the gates moved to the hub, and both reasons for that are spent.
 # The tasks a push run resolved from the pushed head are hub-hosted and pinned now, so no local copy remains to test against itself.
 # The hub's prose gate carries an `if: github.event.pull_request != null` guard, so a push-triggered run skipped it silently.
-# Adopting on push would therefore have taken the fleet lint job minus one of its gates (ptr727/ProjectTemplate#1516).
+# Adopting on push would therefore have taken the fleet lint job minus one of its gates.
 #
 # A fork pull request now produces a run and can satisfy the required check, where under push it produced none and had to be landed on an in-repo branch first.
 # The repository's fork-PR approval policy is first_time_contributors, so a new contributor's first run still waits on a maintainer's Approve and run.
