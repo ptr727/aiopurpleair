@@ -93,7 +93,12 @@ skill covers all of it, scoped down by what the maintainer actually asks for.
    states a different bound for this specific release: `timeout 2700 gh run watch <run-id> --repo
    owner/repo --exit-status` on a host with GNU `timeout`, or the equivalent bounded-wait
    mechanism enforcing the same bound on a host without it (macOS without coreutils, native
-   Windows). Report a timeout separately from a completed run's own conclusion, the tag or
+   Windows). Never pipe `gh run watch` into another command unless the shell running it sets
+   `pipefail`, since without it a pipeline reports its last stage's exit status and
+   `gh run watch ... | tail` reports whether `tail` succeeded rather than whether the run
+   did. Read the watch's own exit status, or read the conclusion back with
+   `gh run view <run-id> --repo owner/repo --json status,conclusion`.
+   Report a timeout separately from a completed run's own conclusion, the tag or
    version it produced. A run that fails, times out, or never starts is reported, never silently
    retried.
 7. In the hub, when the chosen scope includes a release, bring this checkout to the merged
@@ -121,9 +126,14 @@ skill covers all of it, scoped down by what the maintainer actually asks for.
    exactly the case a bare "up to date" would hide. `skills_install.py` stamps and installs from
    whatever this checkout's HEAD already is, so running it against a stale, unrefreshed, or
    locally-diverged `main` skips the refresh silently. Only then run `python3 scripts/skills_install.py --report`, then
-   `python3 scripts/skills_install.py` to install, and confirm `--report` now reads current,
-   regardless of whether step 5 or 6 dispatched, skipped, or failed a release, this step is gated
-   only on the chosen scope, never on the release outcome. This refreshes only the machine running
+   `python3 scripts/skills_install.py` to install, and confirm `--report`'s snapshot now reads
+   current. The two channels hold different things. The Codex and opencode copy keeps the
+   revision it was taken from, the promoted `main` here. The Claude Code channel loads the
+   registered checkout in place, the one `--report` names under `live`, and serves whatever it
+   holds at read time. Where that is this checkout, once step 8 returns it to `develop`, Claude
+   Code sessions on this machine load `develop`. `--report` exits on the snapshot alone. This step runs whether step 5
+   or 6 dispatched, skipped, or failed a release, since it is gated only on the chosen scope,
+   never on the release outcome. This refreshes only the machine running
    this session, per skill-lifecycle, every other machine still refreshes on its own next run or
    `docs/host-setup.md` "Fleet Skills Install" cadence.
 8. Run cleanup regardless of how steps 5 through 7 ended, no release configured, a dispatch

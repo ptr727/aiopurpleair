@@ -2,7 +2,7 @@ name: Publish project release action
 
 # Gated publisher, where a human merge never auto-cuts a release.
 # Only a push to main by an allowlisted bot does, plus a manual dispatch.
-# The plan job is the single source of the release gate, and every job below gates on its output.
+# The plan job is the single source of the release gate, and every job below either gates on its output or inherits the skip through needs.
 # The allowlist is exactly ptr727-codegen[bot] and dependabot[bot], compared against github.actor.
 # The codegen App merges every bot PR, which is how a Dependabot bump reaches PyPI unattended.
 # It also publishes on a workflow_dispatch of main or develop.
@@ -35,7 +35,7 @@ permissions: {}
 
 jobs:
 
-  # Single source of the release-gate decision, publish or not and stable or not, reused by every job below.
+  # Single source of the release-gate decision, publish or not and stable or not, read directly or through needs by every job below.
   # Hosted in the hub rather than carried, so the policy has one definition across the fleet.
   plan:
     name: Plan release job

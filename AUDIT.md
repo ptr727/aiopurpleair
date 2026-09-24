@@ -47,7 +47,7 @@ repo-config/configure.sh check ptr727/aiopurpleair release
 
 `check` reads and never writes, which is what makes it usable here. Its `apply` counterpart writes to the live repository, so it is a converge action rather than a measurement and belongs to section 6.
 
-That command checks the rulesets, the general settings, the security features, the labels, and the deployment environments the fleet registry declares for this repository, which is the `pypi` one. **It does not check secrets**, so the secret check below is part of this section rather than an optional extra, because the command above reports a match whether or not it holds.
+That command checks the rulesets, the general settings and the registry description, the security features, the labels, the link to the fleet project the hub declares, and the deployment environments the fleet registry declares for this repository, which is the `pypi` one. The token needs project access as well as the admin the ruleset endpoints require, since a token without it cannot read the project link and the command reports that group as failing rather than as clean. **It does not check secrets**, so the secret check below is part of this section rather than an optional extra, because the command above reports a match whether or not it holds.
 
 Confirm secret **names** directly, since values are not readable:
 
