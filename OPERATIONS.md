@@ -139,7 +139,7 @@ Development runs cross-platform on Linux, macOS, and Windows, which is the fleet
 
 The version is derived by [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) (NBGV) from [`version.json`](./version.json) and git history, so nothing in the committed working tree carries the real version number.
 
-- [`version.json`](./version.json) holds the SemVer major.minor base, the `publicReleaseRefSpec` regex matching `^refs/heads/main$`, and `versionHeightOffset: -1`. NBGV takes the git commit height plus that offset as the patch component, so the patch is the height minus one. On any ref not matching `publicReleaseRefSpec` NBGV appends a `-g{sha}` prerelease segment. So `main` produces clean SemVer such as `1.0.5`, and `develop` produces prereleases such as `1.0.5-g1a2b3c4`.
+- [`version.json`](./version.json) holds the SemVer major.minor base, the `publicReleaseRefSpec` regex matching `^refs/heads/main$`, and `versionHeightOffset: -1`. NBGV takes the git commit height plus that offset as the patch component, so the patch is the height minus one. On any ref not matching `publicReleaseRefSpec` NBGV appends a `-g{sha}` prerelease segment. So `main` produces clean SemVer such as `X.Y.Z`, and `develop` produces prereleases such as `X.Y.Z-g{sha}`.
 - Bump the base `version` field manually only when opening a new major or minor series. NBGV handles the patch component automatically.
 - [`src/aiopurpleair/_version.py`](./src/aiopurpleair/_version.py) carries a placeholder `__version__`, the single source hatchling reads. **Do not hand-edit it to a real version.** The release build, this repository's [`build-pypi`](./.github/actions/build-pypi/action.yml) hook run by the hub's `build-release-task.yml`, `sed`s the NBGV-computed PEP 440 version into it on the runner before `uv build`, so the published wheel carries the real version while git stays clean. That version is the release tag's `X.Y.Z`, `SemVer2`'s core, the same version the hub's own PyPI default computes. On `develop` the build appends `.dev0`, marking a prerelease. It is not guaranteed to sort above the latest `main` release, so install it by its exact PyPI version, not its release tag, as `pip install ptr727-aiopurpleair==X.Y.Z.dev0` rather than through `pip install --pre ptr727-aiopurpleair`.
 
@@ -177,6 +177,6 @@ When reviewing a pull request that touches [`.github/workflows/`](./.github/work
 Add the GET /v1/organization endpoint
 Map InvalidDataReadKeyError to HTTP 400 read-key failures
 Return tz-aware UTC datetimes from the timestamp validator
-Bump aiohttp from 3.11.0 to 3.12.0
+Bump aiohttp from X.Y.Z to X.(Y+1).0
 Clarify the connection-pooling example in README
 ```
