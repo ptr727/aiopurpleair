@@ -31,6 +31,6 @@ Do this when adding or changing an endpoint, a response model, a sensor field, o
 
 ## Coverage
 
-All 11 spec paths (API `1.2.0`) are implemented, and every response shape is verified against the live API: keys, sensors (list, single, history JSON and CSV), organization, and the full Groups API (groups CRUD, member add and remove, members data, single member, member history CSV).
+All 11 paths of the reconstructed spec ([`docs/purpleair-openapi.yaml`](./docs/purpleair-openapi.yaml)) are implemented, and every response shape is verified against the live API: keys, sensors (list, single, history JSON and CSV), organization, and the full Groups API (groups CRUD, member add and remove, members data, single member, member history CSV).
 
 Group create and member-add are eventually consistent, so a just-created group can 404 the member endpoint for roughly 10 seconds. Live capture polls until the group settles.
