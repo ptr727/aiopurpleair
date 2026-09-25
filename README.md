@@ -123,7 +123,7 @@ import aiopurpleair
 
 **Dependencies**:
 
-Requires Python 3.13 or later (tested on 3.13 and 3.14), and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
+Requires Python 3.13 or later, and depends on `aiohttp`, `pydantic`, `yarl`, and `certifi`.
 
 ## Usage
 
@@ -317,7 +317,7 @@ asyncio.run(main())
 **Build process and artifacts**:
 
 - **Package**: a Python wheel + sdist (`ptr727-aiopurpleair`), built with the [hatchling][hatchling-link] backend on a src-layout ([`src/aiopurpleair/`](./src/aiopurpleair/)) and managed with [uv][uv-link].
-- **Versioning**: automatic via [Nerdbank.GitVersioning][nbgv-link] from [`version.json`](./version.json) (`1.0` base) plus git height; `main` builds a clean stable `X.Y.Z`, `develop` a `X.Y.Z.dev0` prerelease. There is no manual tagging.
+- **Versioning**: automatic via [Nerdbank.GitVersioning][nbgv-link] from the major.minor base in [`version.json`](./version.json) plus git height. `main` builds a clean stable `X.Y.Z`, `develop` a `X.Y.Z.dev0` prerelease. There is no manual tagging.
 - **Publishing**: releases publish to PyPI over OIDC [Trusted Publishing][trustedpublishing-link] (no stored API token). A shipped-path merge to `main` by an allowlisted bot (stable), or a manual dispatch of `main` (stable) or `develop` (prerelease), cuts a [GitHub Release][releases-link] and uploads the wheel + sdist to PyPI. A human merge never auto-cuts a release. See [`WORKFLOW.md`](./WORKFLOW.md) for the complete CI/CD contract.
 
 ## API Reference
@@ -333,7 +333,7 @@ uv run --with pyyaml --with openapi-spec-validator python scripts/generate_opena
 
 The generator takes the API version from the docs' changelog (the apiDoc build-metadata version lags behind), validates the result, and writes `docs/purpleair-openapi.yaml`. A non-empty diff means the upstream API changed. See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for how the code is validated against the spec.
 
-**Coverage**: all 11 paths of the spec (currently API `1.2.0`) are implemented - keys, sensors (list, single, and history JSON/CSV), organization, and the full Groups API (group and member management, member data, and member history). The single-sensor `stats`/`stats_a`/`stats_b` blocks are returned as part of the sensor payload but are not requestable `fields` values, so they are parsed on the response but excluded from the requestable field catalog.
+**Coverage**: all 11 paths of the reconstructed spec ([`docs/purpleair-openapi.yaml`](./docs/purpleair-openapi.yaml)) are implemented: keys, sensors (list, single, and history JSON/CSV), organization, and the full Groups API (group and member management, member data, and member history). The single-sensor `stats`/`stats_a`/`stats_b` blocks are returned as part of the sensor payload but are not requestable `fields` values, so they are parsed on the response but excluded from the requestable field catalog.
 
 ## Questions or Issues
 
