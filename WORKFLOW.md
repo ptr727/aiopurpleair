@@ -211,7 +211,7 @@ The required behaviors, organized by domain. Each is a **MUST**, and its `Output
 ### D5 - Resource Cleanup
 
 - **D5.1 Delete at the point of consumption.** Output: each transfer artifact is deleted by its consumer, by exact name or branch-scoped pattern. The hub's `github-release` job deletes the `release-asset-<branch>-*` artifacts it attached, and `publish-pypi` deletes `pypi-build-<branch>` after its push. This was recorded drift while the carried task shared one artifact between both consumers and granted no job `actions: write`. *Prevents: transfer artifacts accumulating against the storage quota.*
-- **D5.2 Gate the delete to the condition that made the artifact redundant.** Output: `github-release` gates its delete on the same condition as the release create, narrowed by `inputs.expect_release_assets`. `publish-pypi` gates its delete on `!cancelled() && steps.download.outcome == 'success'` rather than on the push, since a step with no `if:` inherits `success()` and would skip on exactly the failed push that left the artifact downloaded.
+- **D5.2 Gate the delete by the kind of consumer it follows.** Output: `github-release` gates its delete on the same condition as the release create, narrowed by `inputs.expect_release_assets`. `publish-pypi` gates its delete on `!cancelled() && steps.download.outcome == 'success'` rather than on the push, since a step with no `if:` inherits `success()` and would skip on exactly the failed push that left the artifact downloaded.
 - **D5.3 Best-effort.** Output: both deletes are `continue-on-error`, tolerate a failed listing with a `::warning::`, and delete every matching id, since a re-run can upload duplicates. *Prevents: a cleanup hiccup reddening a job whose publish succeeded.*
 - **D5.4 Retention backstop.** Output: both `upload-artifact` steps, the hook's `pypi-build-<branch>` and `release-asset-<branch>-pypi` handoffs, set `retention-days: 1`, the failure-path backstop behind D5.1. **D5.5** holds as well, since neither delete enumerates the run's whole artifact set.
 
@@ -237,7 +237,7 @@ The required behaviors, organized by domain. Each is a **MUST**, and its `Output
 
 `GOVERNANCE.md` "Workflow YAML Conventions" names the tool D9.1 excepts and states the suffix rules D9.2 requires.
 
-- **D9.1** Every action is SHA-pinned with a trailing version comment. The **sole exception is `dotnet/nbgv@master`**, whose tag stream lags `master` so tag-tracking would only propose downgrades, and the rationale is documented inline in the hub's `get-version-task.yml`, the one place it is now used.
+- **D9.1** Every action or reusable workflow referenced from another repository is SHA-pinned with a trailing version comment. A local (`./`) reference names no ref and takes no pin. The **sole exception is `dotnet/nbgv@master`**, whose tag stream lags `master` so tag-tracking would only propose downgrades, and the rationale is documented inline in the hub's `get-version-task.yml`, the one place it is now used.
 - **D9.2** File, workflow, job, and step names follow the suffix rules in section 2. The ruleset-bound aggregator's `name:` equals its ruleset `context:`, renamed together.
 - **D9.3** Multi-line bash `run:` blocks start `set -Eeuo pipefail`. Multi-line `if:` uses the folded scalar `if: >-`.
 - **D9.5** Line endings follow [`.editorconfig`](./.editorconfig): workflow YAML is LF, because Dependabot and Actions rewrite it with LF.
