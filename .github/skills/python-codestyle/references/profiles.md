@@ -33,7 +33,9 @@ whether the Python has third-party runtime dependencies, which shows up structur
   repo's deliverable. It is a PEP 621 uv project: `[project]` with `dependencies` (dev tools in
   `[project.optional-dependencies]` or `[dependency-groups]`), a `[build-system]`, and a committed
   `uv.lock` (pinned LF, per GOVERNANCE.md's "Line Endings" section). CI runs `uv sync --frozen` +
-  `uv run <tool>`, so the lockfile pins tool versions.
+  `uv run <tool>`, so the lockfile pins tool versions. A `pyproject.toml` beside a
+  `requirements*.txt` is this profile too, installed with pip, whether or not it carries a
+  `[project]` table.
 - **Scripts** (the `lint-only` profile): stdlib-only utility scripts embedded in a non-Python repo
   (e.g. a Python tooling subtree of a `csharp` app). Run the tools with `uvx` (no project install,
   no lockfile): the `pyproject.toml` carries only tool config (`[tool.ruff]`, `[tool.mypy]`, and
@@ -47,17 +49,20 @@ whether the Python has third-party runtime dependencies, which shows up structur
   auto-updates (SHA-pinned actions, package deps) and otherwise run latest, so the VS Code tasks,
   README, and CI all run the unpinned latest here. `.py` files follow the repo's LF line-ending
   default (per GOVERNANCE.md's "Line Endings" section). There is no pytest suite, and `unittest` is
-  the runner instead. A script that carries a gate still earns tests, written with the standard
+  the runner instead. The directory still owes tests, written with the standard
   library's `unittest` so they run under bare `python3` with nothing installed, as
-  `test_<script>.py` under a `tests/` directory beside the scripts it exercises
-  (`<scripts-dir>/tests/`), kept apart so a test never reads as a tool. Within the scripts
-  directory the name carries the kind: a gate that checks and exits non-zero on a finding takes a
-  `_lint` or `_gate` suffix, and a utility that does work takes none. Any repo carrying Python
-  carries the Python tooling in CI, coverage included, this profile too: `uvx ruff@latest check`,
-  `uvx ruff@latest format --check`, `uvx mypy@latest`, and the unittest suite under
-  `uvx coverage@latest run -m unittest discover -s <scripts-dir>/tests` with `coverage report`,
-  informational with no threshold adopted. A co-present `csharp` type still carries `codecov.yml`
-  for its own tests.
+  `test_<script>.py` under a `tests/` directory beside the scripts it exercises and their
+  `pyproject.toml` (`<scripts-dir>/tests/`), where the validator looks for it, kept apart so a
+  test never reads as a tool. Within the scripts directory the name carries the kind: a gate
+  that checks and exits non-zero on a finding takes a `_lint` or `_gate` suffix, and a utility
+  that does work takes none. Any repo carrying Python
+  owes the same gates whatever its profile: lint, format, a type check, a test suite, and a
+  coverage report to Codecov. The hub validator runs them in each directory the caller declares
+  in its `python-directories` input, which the registry's `pythonDirectories` mirrors. From inside
+  a lint-only directory it runs `uvx ruff@latest check`, `uvx ruff@latest format --check`,
+  `uvx mypy@latest`, and `uvx coverage@latest run -m unittest discover -s tests`, then writes
+  `coverage.xml` and uploads it best-effort per `WORKFLOW.md` D1.6, with no threshold adopted. A
+  declared directory with no `tests/` fails that job.
 
 ## Versioning
 
