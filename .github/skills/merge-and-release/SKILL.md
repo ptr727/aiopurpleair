@@ -5,13 +5,16 @@ description: >-
   asked, dispatches the release, in this hub always refreshing this machine's installed Skills
   from the newly promoted content as part of that release step, never as a separate ask. Use this
   whenever asked to merge main, ship a release, cut a release, or finish a promotion once its PR
-  is already green and fully resolved (produced by drive-pr or by hand). When the request does
-  not say how far ("merge main", "ship it"), ask once whether to merge only or merge and release,
-  rather than guessing which the maintainer wants this time. Triggers even when the phrasing is
-  as short as "merge main and release", because that already states the scope and is itself the
+  is already green and fully resolved (produced by drive-pr or by hand). When the request does not
+  say how far ("merge main", "ship it"), ask once whether to merge only or merge and release,
+  rather than guessing which the maintainer wants this time. Triggers even when the phrasing is as
+  short as "merge main and release", because that already states the scope and is itself the
   explicit, current go-ahead this skill acts on without asking again, though it never substitutes
   for the pr-review-conduct Merge Gate, a promotion PR that is not actually green and fully
-  resolved gets reported and stopped on, not merged.
+  resolved gets reported and stopped on, not merged. Where a merge or dispatch is actually
+  performed this skill wins over `branching-and-release-model`, which supplies the policy it
+  follows, and an `unattended-handoff` run invoked with scope main or release is the one standing
+  go-ahead it accepts in place of asking.
 ---
 
 # Merge and Release
@@ -35,7 +38,7 @@ skill covers all of it, scoped down by what the maintainer actually asks for.
   merged without its release is the more common regret there. Recommend "merge only" as the
   default on an operational repo (registry `workflowModel: operational`), where a release is a
   separate, deliberate dispatch rather than an automatic follow-on to a promotion, per
-  operational-vs-release-workflow's "Operational repositories" delta.
+  branching-and-release-model's "Operational repositories" delta.
 - Detect the hub automatically, `git remote get-url origin` or `gh repo view --json
   nameWithOwner` naming `ptr727/ProjectTemplate`. There the release scope silently includes the
   Skills refresh, a downstream repo never sees it, it has no `.agents/skills` of its own to
@@ -46,17 +49,33 @@ skill covers all of it, scoped down by what the maintainer actually asks for.
 - Naming this skill, and answering its how-far question, is the maintainer's explicit, current
   go-ahead to merge the promotion PR and to perform the scope chosen, for the one repo and PR in
   front of the agent. It is never a standing mode carried to the next PR.
+- The one standing grant is an `unattended-handoff` run the maintainer invoked with scope `main`
+  or `release`, which names in advance each promotion that run's workers make, in that session
+  only. A worker handing a promotion here under it asks no how-far question, since the scope
+  states it, and the Merge Gate is still re-verified per promotion.
 - It is never permission to merge a PR that fails the Merge Gate. Re-verify the gate at
   invocation time, a check from earlier in the session can be stale.
 
 ## The Procedure
 
 1. Identify the open develop -> main promotion PR for this repo, stop and report if none is open.
-2. From a hub checkout, `scripts/` is not carried into downstream repos, run `scripts/pr_review.py
-   status [number] --repo owner/repo` on it and confirm the pr-review-conduct Merge Gate. Stop
-   and report exactly what is missing rather than merging on a partial gate.
-3. `gh pr merge [number] --merge --repo owner/repo`. Never `--delete-branch`, the promotion PR's
-   head is `develop`.
+2. Record the promotion's live head, `gh pr view [number] --repo owner/repo --json headRefOid
+   --jq .headRefOid`. Then, from a hub checkout, `scripts/` is not carried into downstream repos,
+   run `scripts/pr_review.py status [number] --repo owner/repo` on it and confirm the
+   pr-review-conduct Merge Gate. Stop and report exactly what is missing rather than merging on a
+   partial gate. Confirm the digest's `head=` is a prefix of the recorded SHA, re-running both
+   where it is not, so the SHA step 3 merges is the one the gate verified. Where drive-pr's ready
+   report named a head and it is not a prefix of the recorded one, stop and re-ask with the commits added,
+   `gh api repos/owner/repo/compare/<reported>...<recorded> --jq '.commits[] | .sha[:8] + " " +
+   (.commit.message | split("\n")[0])'`, since a feature PR squashed into `develop` after the
+   report moves the promotion's head onto content the maintainer never saw. Under an
+   `unattended-handoff` standing grant there is no report to compare, and content another session
+   merged meanwhile rides along, as that skill's grant accepts.
+   Where no report named a head, a promotion made ready by hand, the go-ahead covers the head
+   this step recorded.
+3. `gh pr merge [number] --merge --match-head-commit <recorded-sha> --repo owner/repo`, so the
+   server refuses the merge if the head moved after step 2. Never `--delete-branch`, the
+   promotion PR's head is `develop`.
 4. Confirm the merge landed, `mergedAt` set, `main`'s tip matching the merge commit.
 5. When the chosen scope includes a release, first bring the hub checkout used for this procedure
    current, `git fetch origin main`, and read this repo's `releaseTrigger` from that fetched tip
@@ -217,7 +236,7 @@ skill covers all of it, scoped down by what the maintainer actually asks for.
 
 - The Merge Gate itself: pr-review-conduct.
 - Never delete develop, no-op republish, the operational repos' dispatch-only model:
-  operational-vs-release-workflow.
+  branching-and-release-model.
 - What the dispatch actually builds and publishes: workflow-ci-contract.
 - Skills install and report semantics: skill-lifecycle.
 - Cleanup mechanics: repo-worktree.
@@ -226,5 +245,8 @@ skill covers all of it, scoped down by what the maintainer actually asks for.
 
 - A merge conflict, a newly failing check, or a gate item that regressed since drive-pr finished
   are each a stop, report the exact state, never force or retry blindly.
+- A merge refused by `--match-head-commit` means the head moved after step 2. Attended, stop and
+  report the commits added, named as step 2 names them, and never retry with the new SHA on the
+  old go-ahead. Under an `unattended-handoff` grant, re-run step 2 on the new head instead.
 - `gh pr merge` or `gh workflow run` failing is reported with its actual output, never
   suppressed, never assumed harmless on the agent's side alone.

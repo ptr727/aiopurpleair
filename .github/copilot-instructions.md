@@ -3,8 +3,8 @@
 Repository-wide instructions for GitHub Copilot.
 
 Read [AGENTS.md](../AGENTS.md) first. It routes every standing repository rule to its canonical
-document. When performing code review, load and follow the `code-review` skill in
-`.github/skills/code-review/SKILL.md`, then load every language, documentation, or workflow skill
+document. When performing code review, load and follow the `fleet-code-review` skill in
+`.github/skills/fleet-code-review/SKILL.md`, then load every language, documentation, or workflow skill
 that it selects for the changed files. GitHub Copilot reads these files from the pull request's
 head branch, so review the instructions in that tree.
 
@@ -40,12 +40,12 @@ state the finding in the review summary.
 For every review:
 
 1. Read the full pull request diff and count its changed files.
-2. Follow `.github/skills/code-review/SKILL.md` and every skill it selects.
+2. Follow `.github/skills/fleet-code-review/SKILL.md` and every skill it selects.
 3. Publish every supported finding. Never suppress a finding or place it in a low-confidence or
    hidden findings block.
 4. Use an inline comment when a changed line can anchor the finding. Use the review body only when
    no valid inline anchor exists.
-5. End the review body with the exact machine-readable marker required by the `code-review` skill.
+5. End the review body with the exact machine-readable marker required by the `fleet-code-review` skill.
 
 The review automation is `scripts/pr_review.py`. It is hub-hosted rather than carried here, so run
 it from a checkout of the hub, the repository [AGENTS.md](../AGENTS.md) "Fleet Bootstrap" names,
