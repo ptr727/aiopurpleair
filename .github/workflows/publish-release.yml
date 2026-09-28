@@ -39,7 +39,7 @@ jobs:
   # Hosted in the hub rather than carried, so the policy has one definition across the fleet.
   plan:
     name: Plan release job
-    uses: ptr727/ProjectTemplate/.github/workflows/publish-plan-task.yml@456694681ae76ff162a9bd784b5376901957feae # 2.0.685
+    uses: ptr727/ProjectTemplate/.github/workflows/publish-plan-task.yml@9fbdbad213d97478c26316fac94ec6dbf4f1da3b # 2.0.735
     with:
       event_name: ${{ github.event_name }}
       actor: ${{ github.actor }}
@@ -50,7 +50,7 @@ jobs:
     name: Validate job
     needs: [plan]
     if: ${{ needs.plan.outputs.publish == 'true' }}
-    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@456694681ae76ff162a9bd784b5376901957feae # 2.0.685
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@9fbdbad213d97478c26316fac94ec6dbf4f1da3b # 2.0.735
     permissions:
       contents: read
     with:
@@ -60,13 +60,13 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # Build, version, and cut the GitHub release for the triggering branch, and upload the wheel + sdist for publish-pypi.
-  # The hub task declares no permissions of its own, so this job grants contents: write for the release and actions: write for its consumed-artifact cleanup.
+  # The hub task declares no permissions, so this job grants contents: write for the release and actions: write for artifact cleanup and D4.7 re-dispatch.
   # The pin matches test-pull-request.yml's smoke-build job.
   publish:
     name: Publish project release job
     needs: [plan, validate]
     if: ${{ needs.plan.outputs.publish == 'true' && needs.validate.result == 'success' }}
-    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@456694681ae76ff162a9bd784b5376901957feae # 2.0.685
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@9fbdbad213d97478c26316fac94ec6dbf4f1da3b # 2.0.735
     permissions:
       contents: write
       actions: write
