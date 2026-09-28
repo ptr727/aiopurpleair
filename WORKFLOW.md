@@ -238,7 +238,7 @@ The required behaviors, organized by domain. Each is a **MUST**, and its `Output
 
 `GOVERNANCE.md` "Workflow YAML Conventions" names the tool D9.1 excepts and states the suffix rules D9.2 requires.
 
-- **D9.1** Every action or reusable workflow referenced from another repository is SHA-pinned with a trailing version comment. A local (`./`) reference names no ref and takes no pin. The **sole exception is `dotnet/nbgv@master`**, whose tag stream lags `master` so tag-tracking would only propose downgrades, and the rationale is documented inline in the hub's `get-version-task.yml`, the one place it is now used.
+- **D9.1** Every action or reusable workflow referenced from another repository is SHA-pinned with a comment naming the release tag at that SHA, spelled as the referenced repository publishes it. A local (`./`) or self-repository (`$/`) reference names no ref and takes no pin, `$/` being GitHub's syntax, in a workflow file, for a path in the repository holding that file, resolved at that file's own commit. The **sole exception is `dotnet/nbgv@master`**, whose tag stream lags `master` so tag-tracking would only propose downgrades, and the rationale is documented inline in the hub's `get-version-task.yml`, the one place it is now used.
 - **D9.2** File, workflow, job, and step names follow the suffix rules in section 2. The ruleset-bound aggregator's `name:` equals its ruleset `context:`, renamed together.
 - **D9.3** Multi-line bash `run:` blocks start `set -Eeuo pipefail`. Multi-line `if:` uses the folded scalar `if: >-`.
 - **D9.5** Line endings follow [`.editorconfig`](./.editorconfig): workflow YAML is LF, because Dependabot and Actions rewrite it with LF.
