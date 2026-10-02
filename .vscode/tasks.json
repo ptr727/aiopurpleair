@@ -2,34 +2,146 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Lint: ruff + mypy + pyright (verify)",
-            "type": "shell",
-            "command": "uv run ruff check && uv run ruff format --check && uv run mypy src && uv run pyright",
-            "group": { "kind": "build", "isDefault": true },
+            "label": "Ruff Check",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "ruff",
+                "check"
+            ],
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "Ruff Format Check",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "ruff",
+                "format",
+                "--check"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "Mypy",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "mypy",
+                "src"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "Pyright",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "pyright"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "Lint: ruff + mypy + pyright (verify)",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Ruff Check",
+                "Ruff Format Check",
+                "Mypy",
+                "Pyright"
+            ],
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Ruff Format",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "ruff",
+                "format"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "Ruff Check Fix",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "ruff",
+                "check",
+                "--fix"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
         },
         {
             "label": "Fix: ruff format + check --fix",
-            "type": "shell",
-            "command": "uv run ruff format && uv run ruff check --fix",
-            "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Ruff Format",
+                "Ruff Check Fix"
+            ],
+            "problemMatcher": []
         },
         {
             "label": "Test: pytest",
-            "type": "shell",
-            "command": "uv run pytest",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "pytest"
+            ],
             "group": { "kind": "test", "isDefault": true },
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
         },
         {
             "label": "Test: pytest (update snapshots)",
-            "type": "shell",
-            "command": "uv run pytest --snapshot-update",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "run",
+                "pytest",
+                "--snapshot-update"
+            ],
             "problemMatcher": [],
-            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+            "presentation": {
+                "showReuseMessage": false,
+                "clear": false
+            }
         },
         // Lint group - the local full doc-lint surface: the same tools and scope as the CI lint set (these run
         // Docker at :latest, so versions can drift from CI's pinned actions). Run on demand. The pre-commit hook

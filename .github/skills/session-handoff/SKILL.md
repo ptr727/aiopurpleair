@@ -293,13 +293,14 @@ comments on whatever link that lane has, closing it too where it was open.
   already names it.
 
 ```sh
-python3 scripts/handoff.py current --repo OWNER/NAME --track "<slug>"
-python3 scripts/handoff.py resume  --repo OWNER/NAME --track "<slug>" --history 5
-python3 scripts/handoff.py chain   --repo OWNER/NAME --track "<slug>" --grep "an escaped regex"
-python3 scripts/handoff.py new     --repo OWNER/NAME --track "<slug>" --title "<subject>" \
+handoff="<hub-checkout>/scripts/handoff.py"   # in the hub itself, scripts/handoff.py
+python3 "$handoff" current --repo OWNER/NAME --track "<slug>"
+python3 "$handoff" resume  --repo OWNER/NAME --track "<slug>" --history 5
+python3 "$handoff" chain   --repo OWNER/NAME --track "<slug>" --grep "an escaped regex"
+python3 "$handoff" new     --repo OWNER/NAME --track "<slug>" --title "<subject>" \
   --body-file "<path>" --dry-run
-python3 scripts/handoff.py link    --repo OWNER/NAME --new "<successor>" --previous "<predecessor>"
-python3 scripts/handoff.py tracks  --repo OWNER/NAME
+python3 "$handoff" link    --repo OWNER/NAME --new "<successor>" --previous "<predecessor>"
+python3 "$handoff" tracks  --repo OWNER/NAME
 ```
 
 Read `--dry-run` output before the first real `new` of a session, since the run can close an issue.
@@ -307,13 +308,25 @@ It is accepted by `new` and `link`, the two subcommands that write, and by no ot
 
 Exit `0` is success, `1` a refusal the caller can act on, a usage error included, and `2` the
 command not having run to an answer, so a refusal and a failure to reach one never share a code. A
-repository missing the `handoff` label is a refusal rather than a degraded empty answer, and it
-names the command that applies the fleet label set except where the label read filled its window,
-which is the one case where the label's absence is unproven rather than established.
+fleet repository missing the `handoff` label, one the hub's `registry/repos.json` lists, is a
+refusal rather than a degraded empty answer, and it names the command that applies the fleet label
+set except where the label read filled its window, which is the one case where the label's absence
+is unproven rather than established.
+
+A fork under the registry's owner that the registry does not list, such as one kept for an
+upstream contribution per `upstream-contribution-workflow`, can host a chain to keep a session's
+state without taking on any fleet configuration. Missing the label there, a read prints a warning
+and answers as an empty chain does, and `new` refuses until it is given `--create-label`, which
+creates the one `handoff` label, confirms it, and then files the first link. Issues turned off stop
+it before any write, naming the command that turns them on. Never apply the fleet label set to such
+a fork. A repository under another owner, or an unregistered one of the owner's that is not a fork,
+refuses before any write. `new` and `link` refuse both whatever the label state, since a label on
+such a repository opens no write there, and that refusal bounds no read.
 
 Creating an issue, commenting on one, closing one, and editing a body are each outward-facing
 writes. `new` creates, comments, and closes, the label riding inside the one create call rather than
-being a write of its own. `link` edits a body, comments, and closes. Each of them is bound by
+being a write of its own, and `new --create-label` adds one write ahead of those, the label itself.
+`link` edits a body, comments, and closes. Each of them is bound by
 `GOVERNANCE.md` "Repository Boundaries and Write Safety" exactly as any other write is. Point them
 at the repository `AGENTS.md` "Session Scope" sends the link to, the one holding the work the next
 session resumes, and at no other. `link` also reaches an issue this chain never created, since the
