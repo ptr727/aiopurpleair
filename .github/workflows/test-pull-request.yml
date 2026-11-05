@@ -29,7 +29,7 @@ jobs:
 
   validate:
     name: Validate job
-    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@320713d9d491f578b5604a8d67b82478717d7b05 # 2.0.1319
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@3a83cd0974ee481c9321bd3b6cf223e5112f876b # 2.0.1337
     permissions:
       contents: read
     # The interpreter matrix is this repository's rather than the task's, the hub task defaulting to ["3.13"] alone.
@@ -45,7 +45,7 @@ jobs:
   # The pin matches publish-release.yml's publish job, which is what keeps the smoke build and the publish build one definition.
   smoke-build:
     name: Smoke build job
-    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@320713d9d491f578b5604a8d67b82478717d7b05 # 2.0.1319
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@3a83cd0974ee481c9321bd3b6cf223e5112f876b # 2.0.1337
     permissions:
       contents: read
     with:
