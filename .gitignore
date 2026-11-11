@@ -32,3 +32,4 @@ htmlcov/
 # Editor / agent
 .claude
 .codex
+.vscode/settings.json
