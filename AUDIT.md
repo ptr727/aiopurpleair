@@ -8,8 +8,8 @@ The verdict vocabulary is fixed in section 5 below: **operational / not operatio
 
 ```shell
 python3 scripts/host_gate.py --repo <path-to-this-checkout>   # from a hub checkout
-python3 spec/audit.py aiopurpleair                            # the deterministic findings, read at main
-python3 spec/audit.py --issue aiopurpleair                    # audits again and renders that run as an issue
+uv run --no-project --script spec/audit.py aiopurpleair          # the deterministic findings, read at main
+uv run --no-project --script spec/audit.py --issue aiopurpleair  # audits again and renders that run as an issue
 ```
 
 A finding is a snapshot. Quote the run stamp (`audit run <UTC> | hub <sha>`) in anything derived from it, and re-run before acting on a finding written earlier.
