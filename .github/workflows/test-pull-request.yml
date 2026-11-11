@@ -65,8 +65,10 @@ jobs:
   # Renaming it starts at the hub rather than here, so a local rename alone leaves every pull request unmergeable.
   # See OPERATIONS.md "Release-Train Invariants".
   # It must succeed, not merely not-fail.
+  # Only a pull_request run takes that name.
+  # So a dispatch run on a pull request's head cannot post the required check without that pull request's gates.
   check-workflow-status:
-    name: Check pull request workflow status job
+    name: ${{ github.event_name == 'pull_request' && 'Check pull request workflow status job' || 'Check workflow status job' }}
     runs-on: ubuntu-latest
     needs: [validate, smoke-build]
     if: ${{ always() }}

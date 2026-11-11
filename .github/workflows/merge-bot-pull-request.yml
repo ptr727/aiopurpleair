@@ -4,7 +4,7 @@ name: Merge bot pull request action
 # The trigger is pull_request_target so the called workflow resolves from the trusted base rather than the PR head, and no job checks out PR code.
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, closed]
 
 # Concurrency keys on the PR number rather than on github.ref, which under pull_request_target is the base branch and would serialize every bot PR against it, so each PR queues independently.
 # The cancel-in-progress setting is false so a follow-up synchronize does not cancel an in-flight opened run before it enables auto-merge.
@@ -25,5 +25,5 @@ jobs:
       CODEGEN_APP_PRIVATE_KEY: ${{ secrets.CODEGEN_APP_PRIVATE_KEY }}
     with:
       # This repository keeps the repository-wide auto-delete off, so a promotion cannot delete develop.
-      # Bot heads are therefore deleted here explicitly, which is what the carried implementation did with --delete-branch.
+      # Bot heads are therefore deleted here explicitly, when the task handles a merged pull request's closed event.
       delete-branch: true
