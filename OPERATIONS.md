@@ -25,7 +25,7 @@ The docs gate is the `lint` job in the hub's `validate-task.yml`, which this rep
 ```sh
 docker run --rm -v "$PWD:/workdir" -w /workdir ghcr.io/streetsidesoftware/cspell:latest --no-progress --config cspell.json README.md HISTORY.md
 docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest '**/*.md'
-docker run --rm -v "$PWD":/check --workdir /check mstruebing/editorconfig-checker:latest
+docker run --rm -v "$PWD":/check --workdir /check ghcr.io/editorconfig-checker/editorconfig-checker:latest
 docker run --rm -v "$PWD:/workdir" -w /workdir rhysd/actionlint:latest -color
 ```
 
