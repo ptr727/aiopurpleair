@@ -12,6 +12,16 @@ These rules apply to every language in the repo.
 
 Use each tool's official casing in task labels, docs, and prose - `uv`, `ruff`, `mypy`, `pyright`, `pytest`, `syrupy`, `hatchling`, `NBGV`. Don't invent personal variants.
 
+### Toolchain Versions
+
+Where the hub carries a baseline file that selects a language's toolchain line, that file sets the fleet's default line once. Each repository selects its own line in its own copy of that file. That copy is the repository's source of truth, and the hub's workflows install the line it selects. They fall back to the hub's default only where a repository carries no selector.
+
+- **A repository may lead or lag the default.** One repository can move to a newer major while the fleet stays, or hold an older line while the fleet moves.
+- **A move edits the selector and every setting that names the same line, together.** These include a target framework, a devcontainer image tag, and any fixed language version.
+- **The language level follows the selected line.** It is left unset wherever the toolchain derives it from the line, and set by hand only where it does not.
+- **A resync never changes the line a repository selects.** It carries the baseline file's fleet-owned settings and leaves the repository's own choice of line in place.
+- **The audit checks that a repository agrees with itself.** Its settings must name one line between them, and that line need not be the hub's default.
+
 ### Clean-Compile Verification
 
 Each language defines a **clean-compile** verification - the combination of build, formatter, linter, and type-check tools that must report clean before a commit. The concrete commands live in the language section below.
@@ -34,6 +44,17 @@ Each language defines a **clean-compile** verification - the combination of buil
 - **Classify a subprocess failure by which command failed and the status code it reports, never by the prose of its message.** That prose varies by tool version and locale, and a status code's value does not, even one printed inside the message. A printed code is read by the notation that marks it, and a match finding none counts as an unexpected failure. Where one command's status code cannot separate the failures its caller handles differently, give each expected failure its own real operation. Where no such operation exists, treat the failure as unexpected. A test asserting a script's output, such as the refusal "Command-Line Arguments" requires, verifies that output rather than classifying a failure.
 - **A failure message states the error, the path or other target, and the remedy, and claims nothing about the state the failure left.** The error the operation raised is the one fact the code holds at that point. A description of what the failure left behind is a prediction. It reads false once an unforeseen state reaches the message, such as a file written in full that then fails to close. A remedy such as "fix what it names, then re-run" needs no such claim.
 
+### Interrupts
+
+This applies to every shell and Python script. `CODESTYLE.md` "Interrupts in Python" states the Python mechanics. This repository carries no shell scripts, so the shell mechanics live in the `shell-codestyle` Skill rather than here.
+
+- **On SIGINT or SIGTERM, a script releases what it holds before it exits.** It removes the temporary paths it created, releases the locks it took, and stops the child processes it started. A path, lock, or child left behind can stop the next run from starting, or feed it a half-written input.
+- **A write to persistent state goes to a temporary path beside the target, then is renamed over it.** An interrupt then leaves the old content or the new, never a mix of both. A store with transactions of its own, such as an SQLite database, is written through those instead. A rename over an open database can corrupt it.
+- **An interrupted script prints one line naming the signal, with no traceback, and ends by re-raising the signal.** The signal then ends the process, so a shell reports 130 for SIGINT or 143 for SIGTERM, 128 plus the signal number. At Ctrl-C, a calling shell's loop then stops rather than starting its next iteration. A script calling `exit 130` has not died by the signal, so that loop reads an ordinary non-zero exit and runs on. A launcher between them, such as `uv run`, exits with the status rather than dying by the signal, so that loop runs on there too.
+- **A script takes this rule when it is created or next edited.** An existing script is not edited for this rule alone.
+- **A script that holds a lock, temporary state, or a child process owes a test that signals it mid-run.** The test sends SIGINT or SIGTERM, then asserts that the script died by that signal and that nothing it held remains. It starts the script with its interpreter directly, since a launcher such as `uv run` hides the signal death. It is skipped on Windows, which cannot deliver either signal for a script to handle. A script holding none of these owes no such test.
+- **A script that ends by `exec`-ing its long-running process owes no interrupt handling for that process.** The `exec` replaces the script, so a signal reaches the process directly. A background child the script starts to outlive the `exec` is handed across it, and the script neither stops it nor waits for it. Such a child is handed across only where something else stops it, such as a container's teardown of its whole process tree. Anything else the script holds is released before the `exec`. A script that holds nothing else at any point before the `exec` owes no trap and no signal test. As PID 1, such as a container's entrypoint, it ignores a SIGTERM that arrives before the `exec`, so a stop waits for its timeout.
+
 ### Parsing Structured Formats
 
 - **A program reading a structured format uses a maintained parser rather than a hand-written one, where a field-tested parser exists for the runtime in use.** That covers YAML, Markdown, TOML, JSON, a programming language's comments or strings, and a shell command line. The standard library's own parsers count, such as Python's `json`, `tomllib`, `ast`, `tokenize`, and `html.parser`. A hand-written reader converges on the format's full grammar one review finding at a time, and every script that grows one pays that cost again.
@@ -43,7 +64,7 @@ Each language defines a **clean-compile** verification - the combination of buil
 A command-line script is one a person or an agent runs by name. A hook its host runs, taking its input from that host rather than from a command line, is not one.
 
 - **Every command-line script answers `--help` and `-h`** with the same text on stdout, then exits 0, changing nothing. That text opens on a usage line naming the script. An agent learns a script's interface by asking it, so a script that reads `--help` as an input acts in a way nobody predicted. A PowerShell script declaring its own parameters answers `-Help` and `-h` instead, from a `-Help` switch carrying an `h` alias. That form follows PowerShell's own parameter convention, so such a script owes no answer to a literal `--help`. A wrapper that forwards its arguments to another script answers whatever that script answers.
-- **An argument the script does not recognize is refused**, with a non-zero exit before any read or write. The refusal names it as an unknown or unrecognized option, argument, flag, or parameter, and PowerShell's own refusal of a parameter it cannot bind counts. So a PowerShell script declaring its own parameters refuses a literal `--help` like any other unrecognized argument. Where no parameter takes the remaining arguments, the binder's refusal does that. A script with such a parameter refuses a dash-prefixed leftover itself. An unrecognized first argument is never taken as a default mode or as a target.
+- **An argument the script does not recognize is refused**, with a non-zero exit before any read or write. The refusal names it as an unknown or unrecognized option, argument, flag, or parameter, and PowerShell's own refusal of a parameter it cannot bind counts. That refusal comes from the binder only in an advanced script, one carrying `[CmdletBinding()]` or a `[Parameter()]` attribute. Without either, a plain `param()` block binds an unknown parameter into `$args` and runs on. Such a script refuses a non-empty `$args` itself, before any work. So a PowerShell script declaring its own parameters refuses a literal `--help` like any other unrecognized argument. A script with a parameter taking the remaining arguments refuses a dash-prefixed leftover itself. An unrecognized first argument is never taken as a default mode or as a target.
 
 ### Script and Utility File Names
 
@@ -190,6 +211,13 @@ tests/
 - One test module per source module. Test functions named `test_<scenario>_<expected_behavior>` - descriptive, not numbered.
 - Use fixtures for shared setup instead of setup/teardown methods. **Avoid mocking when fakes work** - hand-rolled fakes (or `aresponses` for HTTP) are usually clearer and break less than `unittest.mock` magic.
 - **Test the behavior the docstring promises**, not implementation details. If a test breaks when you refactor *without changing behavior*, it is asserting on an implementation detail.
+
+### Interrupts in Python
+
+- **SIGINT and SIGTERM take one path.** Python raises `KeyboardInterrupt` on SIGINT. The entry point installs a SIGTERM handler with `signal.signal` that records the signal and raises `KeyboardInterrupt`.
+- **The entry point catches `KeyboardInterrupt` once, and any handler below it that catches the exception re-raises it.** It prints the line `CODESTYLE.md` "Interrupts" requires, then re-raises SIGTERM where the SIGTERM handler recorded a signal and SIGINT otherwise. To re-raise, it flushes standard output and standard error inside `contextlib.suppress(OSError)`, restores the default handler with `signal.signal(signum, signal.SIG_DFL)`, then re-sends the signal with `os.kill(os.getpid(), signum)`. The suppression covers a pipe whose reader the same Ctrl-C ended. The default action ends the process without Python's own exit handling. So the flush comes first, and no cleanup on this path relies on an `atexit` handler or a finalizer. The re-raise runs outside every `with` block and `finally` clause, such as at the `__main__` call site, since none of them runs after it. A process the re-sent signal does not end, such as PID 1 in a container, then exits 128 plus the signal number. On Windows, `os.kill` ends the process with the signal number as its status, so there the entry point skips it and exits 130.
+- **What the script holds is released by `with` blocks and `finally` clauses as the exception unwinds.** A `subprocess.Popen` child is stopped in a `finally` clause with `terminate()`, then `wait()`, since leaving its `with` block does not stop it. That child runs without `shell=True`, so `terminate()` reaches the command rather than a shell around it.
+- **The rename over persistent state uses `os.replace`.** `os.rename` and `Path.rename` fail on Windows when the target exists.
 
 ### Versioning
 
