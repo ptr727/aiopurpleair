@@ -38,7 +38,7 @@ Evaluate each applicable check at two tiers: **letter** (the exact file, section
 
 ## 4. Validate Settings, Rulesets, Secrets, and the Publish Environment
 
-Settings, labels, and the ruleset payloads are the hub's, applied by its `repo-config/configure.sh` against its own payloads. **This repository carries no `repo-config/` directory**, which is the fleet's model rather than an omission, so run the command from a hub checkout at `main`, passing this repository and its model as arguments:
+Settings, labels, and the ruleset payloads are the hub's, applied by its `repo-config/configure.sh` against its own payloads. **This repository carries no `repo-config/` directory**, which is the fleet's model rather than an omission. So run the command from a hub checkout at `main`, passing this repository and its model as arguments. Use `develop` instead while this repository's registry entry has not yet reached `main`:
 
 ```shell
 # cwd is a hub checkout of github.com/ptr727/ProjectTemplate, at main
@@ -47,9 +47,9 @@ repo-config/configure.sh check ptr727/aiopurpleair release
 
 `check` reads and never writes, which is what makes it usable here. Its `apply` counterpart writes to the live repository, so it is a converge action rather than a measurement and belongs to section 6.
 
-That command checks the rulesets, the general settings and the registry description, the security features, the labels, the link to the fleet project the hub declares, and the deployment environments the fleet registry declares for this repository, which is the `pypi` one. The token needs project access as well as the admin the ruleset endpoints require, since a token without it cannot read the project link and the command reports that group as failing rather than as clean. **It does not check secrets**, so the secret check below is part of this section rather than an optional extra, because the command above reports a match whether or not it holds.
+That command checks the rulesets, the general settings, the registry description, the security features, and the labels. It also checks the link to the fleet project and the deployment environments the fleet registry declares here, which is the `pypi` one. The token needs project access as well as the admin the ruleset endpoints require. A token without it cannot read the project link, and the command reports that group as failing rather than as clean. It also asserts each required secret **name** in each store, never its value. So a secret it reports present still has its value verified by hand. The result must be exactly two rulesets, named `develop` and `main`. A missing ruleset or a divergent payload is a **defect**, and a duplicate or stray ruleset is a **drift finding**.
 
-Confirm secret **names** directly, since values are not readable:
+Read the secret names directly when a `check` finding needs to be seen rather than trusted, since values are not readable:
 
 ```shell
 gh api --paginate repos/ptr727/aiopurpleair/actions/secrets --jq '.secrets[].name'
@@ -88,7 +88,7 @@ The audit is read-only. Converging is the follow-on phase, and the hub's `RESYNC
 - Drive the review loop to green, addressing and resolving every thread, per [`GOVERNANCE.md`][governance-pr-review] "PR Review Etiquette".
 - **Merge only with explicit maintainer permission.** The agent drives to green and stops.
 - One focused pull request per drift class, cross-referencing the finding it closes.
-- Settings, labels, and rulesets are the exception to the pull-request rule, since they are live configuration rather than tracked files. Converge them by running `repo-config/configure.sh apply ptr727/aiopurpleair release` from a hub checkout at `main`, then re-run the `check` in section 4 to confirm the drift is gone. This writes to the live repository, which is why it appears here and not in the measurement section. **The `pypi` environment is the exception inside that exception.** `apply` carries no environment write, so an environment finding is converged by hand, in the GitHub UI or through the `gh api` environment endpoints, and the `check` re-run to confirm. Running `apply` against one changes nothing and says nothing either, since it touches no environment endpoint at all and exits clean: the re-run `check` is what still fails.
+- Settings, labels, and rulesets are the exception to the pull-request rule, since they are live configuration rather than tracked files. Converge them by running `repo-config/configure.sh apply ptr727/aiopurpleair release` from a hub checkout at `main`. Then re-run the `check` in section 4 to confirm the drift is gone. This writes to the live repository, which is why it appears here and not in the measurement section. `apply` ends by writing every secret this repository owes from the running host's `~/.secrets/`, overwriting each stored value. **The `pypi` environment is the exception inside that exception.** `apply` carries no environment write, so an environment finding is converged by hand. Use the GitHub UI or the `gh api` environment endpoints, then re-run the `check` to confirm. Running `apply` against one changes nothing and says nothing either. It touches no environment endpoint at all and exits clean, and the re-run `check` is what still fails.
 
 <!-- Repo -->
 
