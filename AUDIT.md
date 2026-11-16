@@ -41,7 +41,7 @@ Evaluate each applicable check at two tiers: **letter** (the exact file, section
 Settings, labels, and the ruleset payloads are the hub's, applied by its `repo-config/configure.sh` against its own payloads. **This repository carries no `repo-config/` directory**, which is the fleet's model rather than an omission. So run the command from a hub checkout at `main`, passing this repository and its model as arguments. Use `develop` instead while this repository's registry entry has not yet reached `main`:
 
 ```shell
-# cwd is a hub checkout of github.com/ptr727/ProjectTemplate, at main
+# cwd: a ProjectTemplate hub checkout at main, or develop as above
 repo-config/configure.sh check ptr727/aiopurpleair release
 ```
 
@@ -88,7 +88,7 @@ The audit is read-only. Converging is the follow-on phase, and the hub's `RESYNC
 - Drive the review loop to green, addressing and resolving every thread, per [`GOVERNANCE.md`][governance-pr-review] "PR Review Etiquette".
 - **Merge only with explicit maintainer permission.** The agent drives to green and stops.
 - One focused pull request per drift class, cross-referencing the finding it closes.
-- Settings, labels, and rulesets are the exception to the pull-request rule, since they are live configuration rather than tracked files. Converge them by running `repo-config/configure.sh apply ptr727/aiopurpleair release` from a hub checkout at `main`. Then re-run the `check` in section 4 to confirm the drift is gone. This writes to the live repository, which is why it appears here and not in the measurement section. `apply` ends by writing every secret this repository owes from the running host's `~/.secrets/`, overwriting each stored value. **The `pypi` environment is the exception inside that exception.** `apply` carries no environment write, so an environment finding is converged by hand. Use the GitHub UI or the `gh api` environment endpoints, then re-run the `check` to confirm. Running `apply` against one changes nothing and says nothing either. It touches no environment endpoint at all and exits clean, and the re-run `check` is what still fails.
+- Settings, labels, and rulesets are the exception to the pull-request rule, since they are live configuration rather than tracked files. Converge them by running `repo-config/configure.sh apply ptr727/aiopurpleair release` from a hub checkout at `main`, or at `develop` per section 4. Then re-run the `check` in section 4 to confirm the drift is gone. This writes to the live repository, which is why it appears here and not in the measurement section. `apply` ends by writing every secret this repository owes from the running host's `~/.secrets/`, overwriting each stored value. **The `pypi` environment is the exception inside that exception.** `apply` carries no environment write, so an environment finding is converged by hand. Use the GitHub UI or the `gh api` environment endpoints, then re-run the `check` to confirm. Running `apply` against one changes nothing and says nothing either. It touches no environment endpoint at all and exits clean, and the re-run `check` is what still fails.
 
 <!-- Repo -->
 
