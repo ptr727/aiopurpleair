@@ -39,7 +39,7 @@ jobs:
   # Hosted in the hub rather than carried, so the policy has one definition across the fleet.
   plan:
     name: Plan release job
-    uses: ptr727/ProjectTemplate/.github/workflows/publish-plan-task.yml@009d3e5ec0d0e94b308142ab9d61589fcfd57787 # 2.0.1421
+    uses: ptr727/ProjectTemplate/.github/workflows/publish-plan-task.yml@6e05308f8267088a4055607aaae7310548232bdb # 2.0.1479
     with:
       event_name: ${{ github.event_name }}
       actor: ${{ github.actor }}
@@ -50,9 +50,10 @@ jobs:
     name: Validate job
     needs: [plan]
     if: ${{ needs.plan.outputs.publish == 'true' }}
-    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@009d3e5ec0d0e94b308142ab9d61589fcfd57787 # 2.0.1421
+    uses: ptr727/ProjectTemplate/.github/workflows/validate-task.yml@6e05308f8267088a4055607aaae7310548232bdb # 2.0.1479
     permissions:
       contents: read
+      pull-requests: read
     with:
       python-versions: '["3.13", "3.14"]'
     # Named rather than inherited: the fleet forbids secrets: inherit on a cross-repository call.
@@ -66,7 +67,7 @@ jobs:
     name: Publish project release job
     needs: [plan, validate]
     if: ${{ needs.plan.outputs.publish == 'true' && needs.validate.result == 'success' }}
-    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@009d3e5ec0d0e94b308142ab9d61589fcfd57787 # 2.0.1421
+    uses: ptr727/ProjectTemplate/.github/workflows/build-release-task.yml@6e05308f8267088a4055607aaae7310548232bdb # 2.0.1479
     permissions:
       contents: write
       actions: write
