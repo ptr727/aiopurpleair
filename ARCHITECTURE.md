@@ -32,6 +32,6 @@ Do this when adding or changing an endpoint, a response model, a sensor field, o
 
 ## Coverage
 
-All 11 paths of the reconstructed spec ([`docs/purpleair-openapi.yaml`](./docs/purpleair-openapi.yaml)) are implemented, and the mocked suite covers every response shape. The opt-in live suite in [`tests/test_live_api.py`](./tests/test_live_api.py) verifies most of them against production. It covers keys, organization, and sensors (list, single, history JSON and CSV). From the Groups API it covers group create, list, and delete, member add and remove, members data, and single member. Two shapes have no live test yet, group detail (`GET /groups/{group_id}`) and member history CSV, so only the mocked suite covers them.
+All 11 paths of the reconstructed spec ([`docs/purpleair-openapi.yaml`](./docs/purpleair-openapi.yaml)) are implemented, and the mocked suite covers every response shape. The opt-in live suite in [`tests/test_live_api.py`](./tests/test_live_api.py) verifies most of them against production. It covers keys, organization, and sensors (list, single, history JSON and CSV). From the Groups API it covers group create, list, and delete, member add and remove, members data, and single member. Group detail (`GET /groups/{group_id}`) and member history CSV have no live test yet, so only the mocked suite covers them.
 
 Group create and member-add are eventually consistent, so a just-created group can 404 the member endpoint for roughly 10 seconds. Live capture polls until the group settles.
