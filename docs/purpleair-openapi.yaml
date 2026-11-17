@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
   title: PurpleAir API (Unofficial OpenAPI Reconstruction)
-  version: 1.2.0
+  version: 1.2.3
   description: Unofficial OpenAPI spec reconstructed from PurpleAir's apiDoc data at /api_data.js. REST
-    API changelog version 1.2.0; apiDoc build-metadata version 1.0.15 lags and is not used. Generated
+    API changelog version 1.2.3; apiDoc build-metadata version 1.0.15 lags and is not used. Generated
     by scripts/generate_openapi.py.
 servers:
 - url: https://api.purpleair.com/v1
@@ -292,31 +292,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  fields:
-                    type: string
-                    description: An array of values representing the headers for the "data" object and
-                      describes the meanings of the columns in the data object. For example, fields[column]
-                      is the header for data[row][column]. You should always identify the data column
-                      index by looking for the desired header in the fields array since the column order
-                      is not guaranteed to always stay the same.
-                  location_types:
-                    type: string
-                    description: 'When the data includes a location_type, this field is included with
-                      the following values: ["outside", "inside"] An array representing the values for
-                      the location_type column Possible values are: 0 = Outside or 1 = Inside.'
-                  channel_states:
-                    type: string
-                    description: '["No PM", "PM-A", "PM-B", "PM-A+PM-B"] Possible values are: No PM =
-                      No PM sensors were detected. PM-A = PM sensor on channel A only. PM-B = PM sensor
-                      on channel B only. PM-A+PM-B = PM sensor on both channel A and B.'
-                  channel_flags:
-                    type: string
-                    description: '["Normal", "A-Downgraded", "B-Downgraded", "A+B-Downgraded"] Possible
-                      values are: Normal = No PM sensors are marked as downgraded. A-Downgraded = PM sensor
-                      on channel A is marked as downgraded. B-Downgraded = PM sensor on channel B is marked
-                      as downgraded. A+B-Downgraded = PM sensors on both channels A and B are marked as
-                      downgraded. Includes downgrades manually set by PurpleAir and downgrades set automatically
-                      by PurpleAir systems.'
                   channel_flags_auto:
                     type: string
                     description: the same as channel_flags, but only reflects downgrades set automatically
@@ -730,31 +705,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  fields:
-                    type: string
-                    description: An array of values representing the headers for the "data" object and
-                      describes the meanings of the columns in the data object. For example, fields[column]
-                      is the header for data[row][column]. You should always identify the data column
-                      index by looking for the desired header in the fields array since the column order
-                      is not guaranteed to always stay the same.
-                  location_types:
-                    type: string
-                    description: 'When the data includes a location_type, this field is included with
-                      the following values: ["outside", "inside"] An array representing the values for
-                      the location_type column Possible values are: 0 = Outside or 1 = Inside.'
-                  channel_states:
-                    type: string
-                    description: '["No PM", "PM-A", "PM-B", "PM-A+PM-B"] Possible values are: No PM =
-                      No PM sensors were detected. PM-A = PM sensor on channel A only. PM-B = PM sensor
-                      on channel B only. PM-A+PM-B = PM sensor on both channel A and B.'
-                  channel_flags:
-                    type: string
-                    description: '["Normal", "A-Downgraded", "B-Downgraded", "A+B-Downgraded"] Possible
-                      values are: Normal = No PM sensors are marked as downgraded. A-Downgraded = PM sensor
-                      on channel A is marked as downgraded. B-Downgraded = PM sensor on channel B is marked
-                      as downgraded. A+B-Downgraded = PM sensors on both channels A and B are marked as
-                      downgraded. Includes downgrades manually set by PurpleAir and downgrades set automatically
-                      by PurpleAir systems.'
                   channel_flags_auto:
                     type: string
                     description: the same as channel_flags, but only reflects downgrades set automatically
@@ -990,13 +940,6 @@ paths:
                   average:
                     type: integer
                     description: The average parameter used in the API request.
-                  fields:
-                    type: string
-                    description: An array of values representing the headers for the "data" object and
-                      describes the meanings of the columns in the data object. For example, fields[column]
-                      is the header for data[row][column]. You should always identify the data column
-                      index by looking for the desired header in the fields array since the column order
-                      is not guaranteed to always stay the same.
                   data:
                     type: object
                     description: An array of comma separated values, described by the fields array. Always
