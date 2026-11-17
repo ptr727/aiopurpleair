@@ -31,10 +31,10 @@ from aiopurpleair.models.keys import ApiKeyType
 
 
 def _load_env() -> dict[str, str]:
-    """Merge the environment with a dotenv-style credentials file if present."""
+    """Merge the environment with a dotenv credentials file, refusing an unreadable one."""
     values = dict(os.environ)
     named = os.environ.get("AIOPURPLEAIR_TEST_ENV")
-    path = Path(named or ".env.test")
+    path = Path(named) if named else Path(__file__).resolve().parent.parent / ".env.test"
     try:
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
