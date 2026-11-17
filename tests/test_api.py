@@ -46,6 +46,7 @@ from aiopurpleair.errors import (
     RateLimitExceededError,
     RequestError,
     RequiresHttpsError,
+    UnsupportedRequestMethodError,
     raise_error,
 )
 from aiopurpleair.models.keys import ApiKeyType, GetKeysResponse
@@ -154,10 +155,15 @@ async def test_api_error(
         ),
         ("MissingJsonPayloadError", MissingJsonPayloadError, InvalidRequestError, 415),
         ("InvalidJsonPayloadError", InvalidJsonPayloadError, InvalidRequestError, 400),
+        (
+            "UnsupportedRequestMethodError",
+            UnsupportedRequestMethodError,
+            InvalidRequestError,
+            405,
+        ),
         ("RequiresHttpsError", RequiresHttpsError, RequestError, 403),
         ("PaymentRequiredError", PaymentRequiredError, RequestError, 402),
         ("RateLimitExceededError", RateLimitExceededError, RequestError, 429),
-        ("DataInitializingError", DataInitializingError, RequestError, 503),
     ],
 )
 async def test_api_error_codes(
@@ -169,10 +175,10 @@ async def test_api_error_codes(
 ) -> None:
     """Test the typed exception subclasses introduced for PurpleAir error codes.
 
-    Each newly-mapped error code (HTTP 400/402/403/415/429/503 family) must
-    raise its specific subclass, transitively inherit from RequestError so that
-    existing `except RequestError:` catch-alls keep working, and chain the
-    aiohttp ClientError as `__cause__`. Pre-existing codes covered by
+    Each newly-mapped error code (HTTP 400/402/403/405/415/429 family) must
+    raise its specific subclass and chain the aiohttp ClientError as
+    `__cause__`. It must also inherit from RequestError, so existing
+    `except RequestError:` catch-alls keep working. Pre-existing codes covered by
     `test_api_error` (ApiKeyMissingError, ApiKeyInvalidError, NotFoundError)
     are intentionally not duplicated here.
 
@@ -204,6 +210,39 @@ async def test_api_error_codes(
         assert isinstance(captured.value, base_type)
         assert isinstance(captured.value, RequestError)
         assert isinstance(captured.value.__cause__, aiohttp.ClientError)
+
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_api_error_payload_with_http_200(aresponses: ResponsesMockServer) -> None:
+    """Test that an error payload raises its subclass on an HTTP 200 response.
+
+    Since API 1.2.2, DataInitializingError arrives with HTTP 200 rather than
+    503, so no aiohttp ClientError is raised and none is chained as the cause.
+
+    Args:
+        aresponses: An aresponses server.
+    """
+    payload = {
+        "api_version": "V1.2.2-1.1.45",
+        "time_stamp": 1666903245,
+        "error": "DataInitializingError",
+        "description": "Synthesised description for DataInitializingError.",
+    }
+
+    aresponses.add(
+        "api.purpleair.com",
+        "/v1/sensors",
+        "get",
+        response=aiohttp.web_response.json_response(payload, status=200),
+    )
+
+    async with aiohttp.ClientSession() as session:
+        api = API(TEST_API_KEY, session=session)
+        with pytest.raises(DataInitializingError) as captured:
+            await api.async_request("get", "/sensors", GetKeysResponse)
+        assert isinstance(captured.value, RequestError)
+        assert captured.value.__cause__ is None
 
     aresponses.assert_plan_strictly_followed()
 
