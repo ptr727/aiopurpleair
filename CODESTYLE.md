@@ -28,7 +28,7 @@ Each language defines a **clean-compile** verification - the combination of buil
 
 - **Run it after every code change.** The relevant language's clean-compile must pass before you commit; CI runs the same checks as a backstop.
 - **The documented command sequence is the canonical spec** - its exact arguments and strictness. No shortcuts and no more-lenient options (for example, never drop `ruff format --check`'s verify mode or loosen a lint/type-check severity).
-- **A local commit/pre-commit gate is the repo's choice.** No hook runner is mandated, but that is not a recommendation against commit gates. CI is the authoritative backstop regardless; a local gate (for example `pre-commit` running `ruff`, `mypy`, and `pyright`) is an additive convenience a repo may wire and keep - this repo wires none today.
+- **A local commit/pre-commit gate is the repo's choice.** No hook runner is mandated, but that is not a recommendation against commit gates. CI is the authoritative backstop regardless, and a local gate is an additive convenience a repo may wire and keep. This repo wires one in `.pre-commit-config.yaml`. It runs `ruff` and the fleet's prose and EOL gates, and leaves `mypy` and `pyright` to the clean-compile run and CI.
 
 ### Analyzer Diagnostics and Suppressions
 
