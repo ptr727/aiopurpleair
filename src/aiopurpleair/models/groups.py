@@ -1,9 +1,10 @@
 """Define request and response models for groups.
 
-All group and member response shapes were captured from and verified against
-the live API (see the opt-in ``tests/test_live_api.py`` groups round-trip). The
-members-data reads reuse the sensors response shape with ``group_id`` (and the
-single-member read also carries ``member_id``); ``max_age`` and
+All group and member response shapes were captured from the live API. The opt-in
+``tests/test_live_api.py`` groups round-trip re-verifies each of them except group
+detail and member history CSV, which only the mocked suite covers. The
+members-data reads reuse the sensors response shape with ``group_id``, and the
+single-member read also carries ``member_id``. ``max_age`` and
 ``firmware_default_version`` are present but kept optional for robustness.
 """
 
