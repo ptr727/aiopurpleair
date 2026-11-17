@@ -12,7 +12,14 @@ from tests import test_live_api
 
 @pytest.fixture(autouse=True)
 def _isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Point the host fallback at an empty temporary home, never the real one."""
+    """Point the host fallback of each test's ``_load_env()`` at an empty temporary home.
+
+    A test reaching the repository-root default patches ``__file__`` itself. This
+    isolates the calls these tests make, not the live module's import. With
+    ``AIOPURPLEAIR_LIVE_TESTS=1`` set, importing ``test_live_api`` runs its own
+    ``_load_env()`` at collection, before any fixture, since that flag is the
+    opt-in to real credentials.
+    """
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setattr(test_live_api.Path, "home", lambda: home)
