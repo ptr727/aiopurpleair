@@ -68,6 +68,10 @@ include = ["src", "tests", "README.md", "LICENSE", "NOTICE", "pyproject.toml"]
 [tool.ruff]
 line-length = 120
 target-version = "py313"
+# This repository carries the hub's hub_fetch_run.py byte for byte, and the hub lints it under its own rules.
+# Setting force-exclude keeps it excluded when the pre-commit hook passes it by name.
+extend-exclude = ["hub_fetch_run.py"]
+force-exclude = true
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "N", "SIM", "RUF"]
