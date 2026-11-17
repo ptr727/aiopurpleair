@@ -43,8 +43,9 @@ def _load_env() -> dict[str, str]:
                 f"AIOPURPLEAIR_TEST_ENV names {path}, which does not exist: fix or unset it, then re-run"
             ) from None
         return values
-    except OSError as err:
-        raise RuntimeError(f"cannot read credentials file {path}: {err.strerror}: fix it, then re-run") from err
+    except (OSError, UnicodeDecodeError) as err:
+        reason = err.strerror if isinstance(err, OSError) else f"not valid UTF-8 ({err.reason})"
+        raise RuntimeError(f"cannot read credentials file {path}: {reason}: fix it, then re-run") from err
     for key, value in dotenv_values(stream=io.StringIO(text), interpolate=False).items():
         if value is not None:
             values.setdefault(key, value)

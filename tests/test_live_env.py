@@ -60,6 +60,16 @@ def test_load_env_unreadable_file_refuses(tmp_path: Path, monkeypatch: pytest.Mo
         test_live_api._load_env()
 
 
+def test_load_env_non_utf8_file_refuses(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A credentials file that is not valid UTF-8 is refused like an unreadable one."""
+    env_file = tmp_path / "creds.env"
+    env_file.write_bytes(b"PURPLEAIR_API_KEY=\xff\n")
+    monkeypatch.setenv("AIOPURPLEAIR_TEST_ENV", str(env_file))
+
+    with pytest.raises(RuntimeError, match=r"cannot read credentials file .*not valid UTF-8"):
+        test_live_api._load_env()
+
+
 def test_load_env_default_reads_repository_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """With no named path, the repository-root file loads from any working directory."""
     _write(tmp_path / ".env.test", "PURPLEAIR_API_KEY=root-key\n")
