@@ -16,8 +16,9 @@ def _isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     A test reaching the repository-root default patches ``__file__`` itself. This
     isolates the calls these tests make, not the live module's import. With
-    ``AIOPURPLEAIR_LIVE_TESTS=1`` set, importing ``test_live_api`` loads the real
-    credentials file at collection, since that flag is the opt-in to use it.
+    ``AIOPURPLEAIR_LIVE_TESTS=1`` set, importing ``test_live_api`` runs its own
+    ``_load_env()`` at collection, before any fixture, since that flag is the
+    opt-in to real credentials.
     """
     home = tmp_path / "home"
     home.mkdir()
