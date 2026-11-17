@@ -1,10 +1,9 @@
 """Opt-in live validation against the real PurpleAir API.
 
 These tests hit the live API with real credentials, so they are excluded from
-the default suite: they run only when ``AIOPURPLEAIR_LIVE_TESTS=1`` is set and
-credentials are available (from ``.env.test`` in the repo root, the path in
-``AIOPURPLEAIR_TEST_ENV``, or the environment). See OPERATIONS.md
-"Live API Validation".
+the default suite. They run only when ``AIOPURPLEAIR_LIVE_TESTS=1`` is set and
+credentials are available. Those come from a dotenv file ``_load_env()`` finds,
+or from the environment. See OPERATIONS.md "Live API Validation".
 
 Run::
 
@@ -26,26 +25,41 @@ from dotenv import dotenv_values
 
 from aiopurpleair import API
 from aiopurpleair.const import SENSOR_FIELDS
-from aiopurpleair.errors import ApiDisabledError, GroupNotFoundError
+from aiopurpleair.errors import ApiDisabledError, GroupNotFoundError, NotFoundError
 from aiopurpleair.models.keys import ApiKeyType
+
+_HOST_ENV_PARTS = (".secrets", "aiopurpleair_live_test.env")
 
 
 def _load_env() -> dict[str, str]:
-    """Merge the environment with a dotenv credentials file, refusing an unreadable one."""
+    """Merge the environment with a dotenv credentials file, refusing an unreadable one.
+
+    The file is the path in ``AIOPURPLEAIR_TEST_ENV`` when set, which must exist.
+    Otherwise it is the first that exists of the repository-root ``.env.test`` and
+    ``~/.secrets/aiopurpleair_live_test.env``, and neither existing loads no file.
+    """
     values = dict(os.environ)
     named = os.environ.get("AIOPURPLEAIR_TEST_ENV")
-    path = Path(named) if named else Path(__file__).resolve().parent.parent / ".env.test"
-    try:
-        text = path.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        if named:
-            raise RuntimeError(
-                f"AIOPURPLEAIR_TEST_ENV names {path}, which does not exist: fix or unset it, then re-run"
-            ) from None
+    candidates = (
+        [Path(named)]
+        if named
+        else [Path(__file__).resolve().parent.parent / ".env.test", Path.home().joinpath(*_HOST_ENV_PARTS)]
+    )
+    for path in candidates:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            if named:
+                raise RuntimeError(
+                    f"AIOPURPLEAIR_TEST_ENV names {path}, which does not exist: fix or unset it, then re-run"
+                ) from None
+            continue
+        except (OSError, UnicodeDecodeError) as err:
+            reason = err.strerror if isinstance(err, OSError) else f"not valid UTF-8 ({err.reason})"
+            raise RuntimeError(f"cannot read credentials file {path}: {reason}: fix it, then re-run") from err
+        break
+    else:
         return values
-    except (OSError, UnicodeDecodeError) as err:
-        reason = err.strerror if isinstance(err, OSError) else f"not valid UTF-8 ({err.reason})"
-        raise RuntimeError(f"cannot read credentials file {path}: {reason}: fix it, then re-run") from err
     for key, value in dotenv_values(stream=io.StringIO(text), interpolate=False).items():
         if value is not None:
             values.setdefault(key, value)
@@ -72,7 +86,7 @@ pytestmark = [
     pytest.mark.live,
     pytest.mark.skipif(
         not (_LIVE and _API_KEYS),
-        reason="set AIOPURPLEAIR_LIVE_TESTS=1 and provide .env.test (see OPERATIONS.md 'Live API Validation')",
+        reason="set AIOPURPLEAIR_LIVE_TESTS=1 and provide credentials (see OPERATIONS.md 'Live API Validation')",
     ),
 ]
 
@@ -117,12 +131,34 @@ async def test_live_sensors_parse_with_full_field_catalog() -> None:
     """
     pairs = _sensor_pairs()
     if not pairs:
-        pytest.skip("no PURPLEAIR_SENSOR_INDEX_1/2 in .env.test")
+        pytest.skip("no PURPLEAIR_SENSOR_INDEX_1/2 in the credentials file")
     api = API(_PRIMARY_KEY)
     fields = sorted(SENSOR_FIELDS)
     for index, read_key in pairs:
         response = await api.sensors.async_get_sensor(index, fields=fields, read_key=read_key)
         assert response.sensor.sensor_index == index
+
+
+async def test_live_get_sensors_parses_columnar_response() -> None:
+    """The sensors list endpoint returns the configured sensors in its columnar shape.
+
+    ``GET /sensors`` answers with a ``fields`` header and ``data`` rows rather than
+    one ``sensor`` object, so this is the only live check of ``GetSensorsResponse``.
+    Requesting every modeled field also proves the catalog against this endpoint,
+    since the API answers an unknown field with ``InvalidFieldValueError``.
+    ``max_age=0`` matches sensors of any age, so a sensor that has stopped
+    reporting is still returned rather than read as a parse failure.
+    """
+    pairs = _sensor_pairs()
+    if not pairs:
+        pytest.skip("no PURPLEAIR_SENSOR_INDEX_1/2 in the credentials file")
+    indices = sorted(index for index, _ in pairs)
+    read_keys = [read_key for _, read_key in pairs if read_key]
+    response = await API(_PRIMARY_KEY).sensors.async_get_sensors(
+        sorted(SENSOR_FIELDS), max_age=0, sensor_indices=indices, read_keys=read_keys or None
+    )
+    assert sorted(response.data) == indices
+    assert all(response.data[index].sensor_index == index for index in indices)
 
 
 async def test_live_sensor_history() -> None:
@@ -136,7 +172,7 @@ async def test_live_sensor_history() -> None:
     """
     pairs = _sensor_pairs()
     if not pairs:
-        pytest.skip("no PURPLEAIR_SENSOR_INDEX_1/2 in .env.test")
+        pytest.skip("no PURPLEAIR_SENSOR_INDEX_1/2 in the credentials file")
     index, read_key = pairs[0]
     end = datetime.now(UTC)
     start = end - timedelta(days=1)
@@ -165,16 +201,19 @@ async def test_live_sensor_history() -> None:
 
 
 async def _read_when_ready[T](factory: Callable[[], Awaitable[T]]) -> T | None:
-    """Await a group read, polling through the transient GroupNotFoundError.
+    """Await a group read, polling through a transient NotFoundError.
 
     Group and member reads are eventually consistent after a write, so a read
-    can 404 for a few seconds. Returns the result, or ``None`` if it never
-    settles.
+    can 404 for a few seconds. A group read raises ``GroupNotFoundError``. A
+    member read can also raise a plain ``NotFoundError`` ("Cannot find a sensor
+    with the provided parameters") while the member propagates. Both are
+    ``NotFoundError``, so both are polled through. Returns the result, or ``None``
+    if it never settles.
     """
     for _ in range(12):
         try:
             return await factory()
-        except GroupNotFoundError:
+        except NotFoundError:
             await asyncio.sleep(5)
     return None
 
@@ -200,7 +239,7 @@ async def _add_member_when_ready(write_api: API, group_id: int, sensor_index: in
 
 @pytest.mark.skipif(
     not (_LIVE and _WRITE_KEY and _PRIMARY_KEY),
-    reason="need PURPLEAIR_API_KEY_WRITE and a same-account PURPLEAIR_API_KEY in .env.test",
+    reason="need PURPLEAIR_API_KEY_WRITE and a same-account PURPLEAIR_API_KEY in the credentials file",
 )
 async def test_live_groups_roundtrip() -> None:
     """A group and its members round-trip through the real API (self-cleaning).
@@ -208,8 +247,10 @@ async def test_live_groups_roundtrip() -> None:
     Reads and writes use different key types even within groups: create/delete
     take the WRITE key, list/detail/data take the same account's READ key. With
     an owner email + owned sensor configured, a member is added and read back;
-    otherwise just the group create/list/delete is exercised. Everything created
-    is always deleted, even on assertion failure.
+    otherwise just the group create/list/delete is exercised. Member reads poll
+    through a transient ``NotFoundError``, and skip rather than pass vacuously
+    when they never settle. Everything created is always deleted, even on
+    assertion failure.
     """
     write_api = API(_WRITE_KEY)
     read_api = API(_PRIMARY_KEY)
@@ -230,9 +271,6 @@ async def test_live_groups_roundtrip() -> None:
         if member_id is None:
             pytest.skip("the new group did not propagate to the member endpoint in time")
         try:
-            # The member reads are eventually consistent too, so poll through the
-            # transient GroupNotFoundError. If they never settle, skip rather than
-            # pass vacuously (the endpoints are still exercised by the mocked suite).
             member = await _read_when_ready(
                 lambda: read_api.groups.async_get_member(group_id, member_id, fields=["name"])
             )

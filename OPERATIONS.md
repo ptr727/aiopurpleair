@@ -46,7 +46,7 @@ base="$(git merge-base origin/develop HEAD)" && uv run --no-project python hub_f
 
 The default suite is fully mocked (aresponses + syrupy) and hits no network. [`tests/test_live_api.py`](./tests/test_live_api.py) is an **opt-in** layer that exercises the client against the real PurpleAir API with real credentials. It validates that the modeled fields, error codes, and organization endpoint still match production, including edge cases the mocks cannot prove, such as an overdrawn account returning a negative `remaining_points`. It is deselected by default and never runs in CI.
 
-- **Credentials live in `.env.test`** at the repository root, gitignored and `chmod 600`, a dotenv file of real keys that is **never committed or echoed**. [`.env.test.example`](./.env.test.example) is the tracked template, so copy it and fill in real values. An alternate path can be given via `AIOPURPLEAIR_TEST_ENV`. A live run stops at collection when that path does not exist, or when the credentials file cannot be read. Keys must never appear in output, so parametrized tests use positional ids (`key1`, `key2`) rather than the raw key.
+- **Credentials live in a dotenv file of real keys** that is `chmod 600` and **never committed or echoed**. [`.env.test.example`](./.env.test.example) is the tracked template, so copy it and fill in real values. The recommended location is the host-scoped `~/.secrets/aiopurpleair_live_test.env`, per [`GOVERNANCE.md`](./GOVERNANCE.md) "Repo-Scoped Secrets". Every checkout and task worktree on the host finds it there. The loader reads the path in `AIOPURPLEAIR_TEST_ENV` when that is set. Otherwise it reads the first that exists of a gitignored `.env.test` at the repository root and the host file, and it never merges the two. A live run stops at collection when the named path does not exist, or when the file it chose cannot be read. Keys must never appear in output, so parametrized tests use positional ids (`key1`, `key2`) rather than the raw key.
 - **Run it** with both the env flag and credentials present, or every live test skips:
 
   ```sh
@@ -54,7 +54,7 @@ The default suite is fully mocked (aresponses + syrupy) and hits no network. [`t
   ```
 
   Use `--no-cov` because this layer deliberately does not drive the 100% coverage gate, which is the mocked suite's job. Omitting the flag or the file leaves the default `uv run pytest` unchanged.
-- **What it checks**: each configured READ key validates via `check_api_key`; the organization endpoint parses for each account, asserting only field *types* since `remaining_points` may legitimately be negative; each owned sensor parses when **every** `SENSOR_FIELDS` entry is requested, so a clean parse proves the catalog; sensor history JSON and CSV parse, trying each key since history is gated per key and skips if disabled for all; and a self-cleaning groups round-trip creates a group with the WRITE key, lists it with the same-account READ key, and always deletes it. Writes use `PURPLEAIR_API_KEY_WRITE`. When adding an endpoint or field, extend this file so real data exercises it.
+- **What it checks**: Each configured READ key validates via `check_api_key`. The organization endpoint parses for each account, asserting only field *types*, since `remaining_points` may legitimately be negative. Each owned sensor parses when **every** `SENSOR_FIELDS` entry is requested. It does so through both the single-sensor endpoint and the columnar `GET /sensors` list, so a clean parse proves the catalog against each. Sensor history JSON and CSV parse. The test tries each key, since history is gated per key, and skips if it is disabled for all. A self-cleaning groups round-trip creates a group with the WRITE key, lists it with the same-account READ key, and always deletes it. Writes use `PURPLEAIR_API_KEY_WRITE`. When adding an endpoint or field, extend this file so real data exercises it.
 
 ## Runbooks
 
@@ -94,7 +94,7 @@ Edit [`.github/dependabot.yml`](./.github/dependabot.yml). Each ecosystem is lis
 
 The repository is the artifact, and GitHub holds the only copy that matters. Published PyPI releases are immutable and cannot be re-pushed at the same version, so a bad release is superseded by the next patch rather than replaced. See "Release and Versioning Facts" below for why `uv.lock` sits in the publish paths filter.
 
-`.env.test` is the one piece of local state that is not recoverable from the repository. It holds real PurpleAir API keys, is gitignored by design, and is re-created from [`.env.test.example`](./.env.test.example) plus the keys held in the maintainer's password manager.
+The live-test credentials file is the one piece of local state that is not recoverable from the repository. That is `~/.secrets/aiopurpleair_live_test.env` or a gitignored `.env.test`, per "Live API Validation" above. It holds real PurpleAir API keys and is re-created from [`.env.test.example`](./.env.test.example) plus the keys held in the maintainer's password manager.
 
 ## Logs and Debugging
 
@@ -117,7 +117,7 @@ Snapshot tests use [syrupy](https://github.com/syrupy-project/syrupy). Regenerat
 - The App authors the auto-merges. [`merge-bot-pull-request.yml`](./.github/workflows/merge-bot-pull-request.yml) is a thin caller and the job graph is the hub's `merge-bot-task.yml`, so the token is minted there rather than here and this repository passes only the two App secrets. The built-in `GITHUB_TOKEN` will not do: its merge commits do not trigger the downstream `publish-release` push, and on a Dependabot PR it is read-only. Any workflow needing an App token generates one with `actions/create-github-app-token`, never a hard-coded value or a PAT.
 - **PyPI publishing is keyless OIDC Trusted Publishing, so there is no API token.** Registration is on PyPI as a trusted publisher for this repository plus workflow, alongside a `pypi` deployment environment restricted to `main` and `develop`.
 - With no "Require approvals" on `develop` or `main`, bot PRs auto-merge as soon as the required check is green. If approvals are ever turned on, both `ptr727-codegen[bot]` and `dependabot[bot]` need to be on the bypass list.
-- **Local credentials on disk** are limited to `.env.test`, covered under "Backup and Recovery" above.
+- **Local credentials on disk** are limited to the live-test credentials file, covered under "Backup and Recovery" above.
 
 ## Local Rule Extensions
 
