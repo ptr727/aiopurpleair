@@ -1,4 +1,4 @@
-# Local pre-commit: language formatting and style only (ruff). Full doc-lint runs in CI and the VS Code Lint tasks.
+# Local pre-commit: ruff, plus the fleet prose and EOL gates fetched from ProjectTemplate@main by hub_fetch_run.py.
 # Install with prek (uvx prek install), a fast drop-in for pre-commit. The local hooks run the repo's own ruff
 # (from uv.lock) so the hook and CI use one version, and Dependabot's uv ecosystem keeps it current.
 repos:
@@ -14,3 +14,13 @@ repos:
         entry: uv run ruff format
         language: system
         types: [python]
+      - id: prose-gate
+        name: prose/comment-style gate (diff-scoped, fetched fresh from ProjectTemplate@main)
+        entry: uv run --no-project python hub_fetch_run.py .github/actions/prose-gate/prose_lint.py --skip-generated --diff-commit --
+        language: system
+        require_serial: true
+      - id: eol-gate
+        name: line-ending consistency gate (fetched fresh from ProjectTemplate@main)
+        entry: uv run --no-project python hub_fetch_run.py .github/actions/repo-gate/repo_gate.py --check eol
+        language: system
+        pass_filenames: false
