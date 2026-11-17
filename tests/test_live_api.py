@@ -145,7 +145,7 @@ async def test_live_get_sensors_parses_columnar_response() -> None:
     ``GET /sensors`` answers with a ``fields`` header and ``data`` rows rather than
     one ``sensor`` object, so this is the only live check of ``GetSensorsResponse``.
     Requesting every modeled field also proves the catalog against this endpoint,
-    since the response model refuses a ``fields`` entry it does not know.
+    since the API answers an unknown field with ``InvalidFieldValueError``.
     """
     pairs = _sensor_pairs()
     if not pairs:
@@ -245,8 +245,10 @@ async def test_live_groups_roundtrip() -> None:
     Reads and writes use different key types even within groups: create/delete
     take the WRITE key, list/detail/data take the same account's READ key. With
     an owner email + owned sensor configured, a member is added and read back;
-    otherwise just the group create/list/delete is exercised. Everything created
-    is always deleted, even on assertion failure.
+    otherwise just the group create/list/delete is exercised. Member reads poll
+    through a transient ``NotFoundError``, and skip rather than pass vacuously
+    when they never settle. Everything created is always deleted, even on
+    assertion failure.
     """
     write_api = API(_WRITE_KEY)
     read_api = API(_PRIMARY_KEY)
@@ -267,9 +269,6 @@ async def test_live_groups_roundtrip() -> None:
         if member_id is None:
             pytest.skip("the new group did not propagate to the member endpoint in time")
         try:
-            # The member reads are eventually consistent too, so poll through the
-            # transient GroupNotFoundError. If they never settle, skip rather than
-            # pass vacuously (the endpoints are still exercised by the mocked suite).
             member = await _read_when_ready(
                 lambda: read_api.groups.async_get_member(group_id, member_id, fields=["name"])
             )
