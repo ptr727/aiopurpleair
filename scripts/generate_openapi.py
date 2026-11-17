@@ -25,11 +25,11 @@ or offline runs.
 from __future__ import annotations
 
 import argparse
-import html
 import json
 import re
 import sys
 import urllib.request
+from html.parser import HTMLParser
 
 BASE_URL = "https://api.purpleair.com/v1"
 
@@ -66,12 +66,25 @@ def parse_apidoc(text: str) -> object:
     return json.loads(body)
 
 
+class _TextExtractor(HTMLParser):
+    """Collect an HTML fragment's text, with entities already unescaped."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
 def clean(value: str | None) -> str:
     """Strip HTML tags and unescape entities (``&#46;`` -> ``.``)."""
     if not value:
         return ""
-    text = re.sub(r"<[^>]+>", "", value)
-    return " ".join(html.unescape(text).split()).strip()
+    extractor = _TextExtractor()
+    extractor.feed(value)
+    extractor.close()
+    return " ".join("".join(extractor.parts).split())
 
 
 def schema_type(apidoc_type: str | None) -> str:

@@ -46,7 +46,7 @@ base="$(git merge-base origin/develop HEAD)" && uv run --no-project python hub_f
 
 The default suite is fully mocked (aresponses + syrupy) and hits no network. [`tests/test_live_api.py`](./tests/test_live_api.py) is an **opt-in** layer that exercises the client against the real PurpleAir API with real credentials. It validates that the modeled fields, error codes, and organization endpoint still match production, including edge cases the mocks cannot prove, such as an overdrawn account returning a negative `remaining_points`. It is deselected by default and never runs in CI.
 
-- **Credentials live in `.env.test`** at the repository root, gitignored and `chmod 600`, a dotenv file of real keys that is **never committed or echoed**. [`.env.test.example`](./.env.test.example) is the tracked template, so copy it and fill in real values. An alternate path can be given via `AIOPURPLEAIR_TEST_ENV`. Keys must never appear in output, so parametrized tests use positional ids (`key1`, `key2`) rather than the raw key.
+- **Credentials live in `.env.test`** at the repository root, gitignored and `chmod 600`, a dotenv file of real keys that is **never committed or echoed**. [`.env.test.example`](./.env.test.example) is the tracked template, so copy it and fill in real values. An alternate path can be given via `AIOPURPLEAIR_TEST_ENV`. A live run stops at collection when that path does not exist, or when the credentials file cannot be read. Keys must never appear in output, so parametrized tests use positional ids (`key1`, `key2`) rather than the raw key.
 - **Run it** with both the env flag and credentials present, or every live test skips:
 
   ```sh
