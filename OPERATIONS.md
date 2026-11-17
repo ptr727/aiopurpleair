@@ -80,7 +80,7 @@ Run this whenever the upstream API may have changed. See [`ARCHITECTURE.md`](./A
 uv run --with pyyaml --with openapi-spec-validator python scripts/generate_openapi.py
 ```
 
-That is a live fetch, and it writes and validates `docs/purpleair-openapi.yaml`. Pass `--data` and `--project` to run offline from cached `api_data.js` and `api_project.js`. Commit the regenerated spec: a non-empty diff means the upstream API changed and the library's coverage or models may need updating.
+That is a live fetch, and it writes and validates `docs/purpleair-openapi.yaml`. Pass `--data` and `--project` to run offline from cached `api_data.js` and `api_project.js`. Commit the regenerated spec. A non-empty diff can come from a change to the generator, from cached inputs that differ from the live data, or from upstream. An upstream change can be to the API or only to its documentation. So rule out a generator change and stale cached inputs, then check a live response before changing a model. [`ARCHITECTURE.md`](./ARCHITECTURE.md) "Validating the Code Against the Spec" records a case where the documentation alone changed.
 
 ### Close an Issue From a Pull Request
 
