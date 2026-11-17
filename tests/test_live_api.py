@@ -146,6 +146,8 @@ async def test_live_get_sensors_parses_columnar_response() -> None:
     one ``sensor`` object, so this is the only live check of ``GetSensorsResponse``.
     Requesting every modeled field also proves the catalog against this endpoint,
     since the API answers an unknown field with ``InvalidFieldValueError``.
+    ``max_age=0`` matches sensors of any age, so a sensor that has stopped
+    reporting is still returned rather than read as a parse failure.
     """
     pairs = _sensor_pairs()
     if not pairs:
@@ -153,7 +155,7 @@ async def test_live_get_sensors_parses_columnar_response() -> None:
     indices = sorted(index for index, _ in pairs)
     read_keys = [read_key for _, read_key in pairs if read_key]
     response = await API(_PRIMARY_KEY).sensors.async_get_sensors(
-        sorted(SENSOR_FIELDS), sensor_indices=indices, read_keys=read_keys or None
+        sorted(SENSOR_FIELDS), max_age=0, sensor_indices=indices, read_keys=read_keys or None
     )
     assert sorted(response.data) == indices
     assert all(response.data[index].sensor_index == index for index in indices)
