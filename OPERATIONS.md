@@ -94,7 +94,7 @@ Edit [`.github/dependabot.yml`](./.github/dependabot.yml). Each ecosystem is lis
 
 The repository is the artifact, and GitHub holds the only copy that matters. Published PyPI releases are immutable and cannot be re-pushed at the same version, so a bad release is superseded by the next patch rather than replaced. See "Release and Versioning Facts" below for why `uv.lock` sits in the publish paths filter.
 
-`.env.test` is the one piece of local state that is not recoverable from the repository. It holds real PurpleAir API keys, is gitignored by design, and is re-created from [`.env.test.example`](./.env.test.example) plus the keys held in the maintainer's password manager.
+The live-test credentials file is the one piece of local state that is not recoverable from the repository. That is `~/.secrets/aiopurpleair_live_test.env` or a gitignored `.env.test`, per "Live API Validation" above. It holds real PurpleAir API keys and is re-created from [`.env.test.example`](./.env.test.example) plus the keys held in the maintainer's password manager.
 
 ## Logs and Debugging
 
@@ -117,7 +117,7 @@ Snapshot tests use [syrupy](https://github.com/syrupy-project/syrupy). Regenerat
 - The App authors the auto-merges. [`merge-bot-pull-request.yml`](./.github/workflows/merge-bot-pull-request.yml) is a thin caller and the job graph is the hub's `merge-bot-task.yml`, so the token is minted there rather than here and this repository passes only the two App secrets. The built-in `GITHUB_TOKEN` will not do: its merge commits do not trigger the downstream `publish-release` push, and on a Dependabot PR it is read-only. Any workflow needing an App token generates one with `actions/create-github-app-token`, never a hard-coded value or a PAT.
 - **PyPI publishing is keyless OIDC Trusted Publishing, so there is no API token.** Registration is on PyPI as a trusted publisher for this repository plus workflow, alongside a `pypi` deployment environment restricted to `main` and `develop`.
 - With no "Require approvals" on `develop` or `main`, bot PRs auto-merge as soon as the required check is green. If approvals are ever turned on, both `ptr727-codegen[bot]` and `dependabot[bot]` need to be on the bypass list.
-- **Local credentials on disk** are limited to `.env.test`, covered under "Backup and Recovery" above.
+- **Local credentials on disk** are limited to the live-test credentials file, covered under "Backup and Recovery" above.
 
 ## Local Rule Extensions
 
