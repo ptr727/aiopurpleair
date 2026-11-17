@@ -10,26 +10,28 @@ from tests import test_live_api
 
 
 def _write(path: Path, text: str) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path
 
 
 def test_load_env_named_file_loads_dotenv_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A named file's values load, with quotes, export, and comments handled."""
+    """A named file's values load literally, with quotes, export, and comments handled."""
     env_file = _write(
         tmp_path / "creds.env",
-        '# comment\nPURPLEAIR_API_KEY="file-key"\nexport PURPLEAIR_SENSOR_INDEX_1=12345 # trailing\nNOVALUE\n',
+        '# comment\nPURPLEAIR_API_KEY="file-key"\nexport PURPLEAIR_SENSOR_INDEX_1=12345 # trailing\n'
+        "PURPLEAIR_OWNER_EMAIL=a${HOME}b\nNOVALUE\n",
     )
     monkeypatch.setenv("AIOPURPLEAIR_TEST_ENV", str(env_file))
     monkeypatch.delenv("PURPLEAIR_API_KEY", raising=False)
     monkeypatch.delenv("PURPLEAIR_SENSOR_INDEX_1", raising=False)
+    monkeypatch.delenv("PURPLEAIR_OWNER_EMAIL", raising=False)
     monkeypatch.delenv("NOVALUE", raising=False)
 
     values = test_live_api._load_env()
 
     assert values["PURPLEAIR_API_KEY"] == "file-key"
     assert values["PURPLEAIR_SENSOR_INDEX_1"] == "12345"
+    assert values["PURPLEAIR_OWNER_EMAIL"] == "a${HOME}b"
     assert "NOVALUE" not in values
 
 
