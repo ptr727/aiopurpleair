@@ -14,6 +14,7 @@ Run::
 from __future__ import annotations
 
 import asyncio
+import io
 import os
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
@@ -21,6 +22,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from dotenv import dotenv_values
 
 from aiopurpleair import API
 from aiopurpleair.const import SENSOR_FIELDS
@@ -29,15 +31,23 @@ from aiopurpleair.models.keys import ApiKeyType
 
 
 def _load_env() -> dict[str, str]:
-    """Merge the environment with a dotenv-style credentials file if present."""
+    """Merge the environment with a dotenv credentials file, refusing an unreadable one."""
     values = dict(os.environ)
-    path = Path(os.environ.get("AIOPURPLEAIR_TEST_ENV", ".env.test"))
-    if path.is_file():
-        for raw in path.read_text(encoding="utf-8").splitlines():
-            line = raw.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, _, value = line.partition("=")
-                values.setdefault(key.strip(), value.strip().strip("\"'"))
+    named = os.environ.get("AIOPURPLEAIR_TEST_ENV")
+    path = Path(named) if named else Path(__file__).resolve().parent.parent / ".env.test"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        if named:
+            raise RuntimeError(
+                f"AIOPURPLEAIR_TEST_ENV names {path}, which does not exist: fix or unset it, then re-run"
+            ) from None
+        return values
+    except OSError as err:
+        raise RuntimeError(f"cannot read credentials file {path}: {err.strerror}: fix it, then re-run") from err
+    for key, value in dotenv_values(stream=io.StringIO(text), interpolate=False).items():
+        if value is not None:
+            values.setdefault(key, value)
     return values
 
 
