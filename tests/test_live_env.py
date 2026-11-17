@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -46,9 +47,10 @@ def test_load_env_environment_overrides_file(tmp_path: Path, monkeypatch: pytest
 
 def test_load_env_missing_named_path_refuses(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A path named in AIOPURPLEAIR_TEST_ENV that does not exist is refused."""
-    monkeypatch.setenv("AIOPURPLEAIR_TEST_ENV", str(tmp_path / "missing.env"))
+    missing = tmp_path / "missing.env"
+    monkeypatch.setenv("AIOPURPLEAIR_TEST_ENV", str(missing))
 
-    with pytest.raises(RuntimeError, match=r"AIOPURPLEAIR_TEST_ENV names .*missing\.env"):
+    with pytest.raises(RuntimeError, match=rf"names {re.escape(str(missing))}, which does not exist: fix or unset it"):
         test_live_api._load_env()
 
 
@@ -56,7 +58,9 @@ def test_load_env_unreadable_file_refuses(tmp_path: Path, monkeypatch: pytest.Mo
     """A credentials path that cannot be read as a file is refused."""
     monkeypatch.setenv("AIOPURPLEAIR_TEST_ENV", str(tmp_path))
 
-    with pytest.raises(RuntimeError, match="cannot read credentials file"):
+    with pytest.raises(
+        RuntimeError, match=rf"cannot read credentials file {re.escape(str(tmp_path))}: .+: fix it, then re-run"
+    ):
         test_live_api._load_env()
 
 
@@ -66,7 +70,10 @@ def test_load_env_non_utf8_file_refuses(tmp_path: Path, monkeypatch: pytest.Monk
     env_file.write_bytes(b"PURPLEAIR_API_KEY=\xff\n")
     monkeypatch.setenv("AIOPURPLEAIR_TEST_ENV", str(env_file))
 
-    with pytest.raises(RuntimeError, match=r"cannot read credentials file .*not valid UTF-8"):
+    with pytest.raises(
+        RuntimeError,
+        match=rf"cannot read credentials file {re.escape(str(env_file))}: not valid UTF-8 \(.+\): fix it, then re-run",
+    ):
         test_live_api._load_env()
 
 
