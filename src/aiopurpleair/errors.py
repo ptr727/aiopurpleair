@@ -170,6 +170,12 @@ class InvalidJsonPayloadError(InvalidRequestError):
     pass
 
 
+class UnsupportedRequestMethodError(InvalidRequestError):
+    """Define an unsupported-HTTP-method error (HTTP 405)."""
+
+    pass
+
+
 class RequiresHttpsError(RequestError):
     """Define a requires-HTTPS error (HTTP 403)."""
 
@@ -189,7 +195,7 @@ class RateLimitExceededError(RequestError):
 
 
 class DataInitializingError(RequestError):
-    """Define a data-initializing transient error (HTTP 503)."""
+    """Define a data-initializing transient error (HTTP 200)."""
 
     pass
 
@@ -261,6 +267,7 @@ ERROR_CODE_MAP = {
     "InvalidBoundingBoxError": InvalidBoundingBoxError,
     "MissingJsonPayloadError": MissingJsonPayloadError,
     "InvalidJsonPayloadError": InvalidJsonPayloadError,
+    "UnsupportedRequestMethodError": UnsupportedRequestMethodError,
     "RequiresHttpsError": RequiresHttpsError,
     "PaymentRequiredError": PaymentRequiredError,
     "RateLimitExceededError": RateLimitExceededError,
